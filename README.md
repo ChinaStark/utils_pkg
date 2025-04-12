@@ -9,6 +9,8 @@
 ### How to build or use?
 
 ```python
+git clone https://github.com/ChinaStark/utils_pkg.git
+
 cd utils_pkg
 
 # setup
