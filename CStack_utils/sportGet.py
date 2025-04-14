@@ -87,11 +87,10 @@ def request_url(url, params_, headers_):
         print(response.headers['Set-Cookie'])
     try:
         response_json = response.json()  # 直接调用 .json() 方法
-        # print("JSON Response:")
         ret = response_json
     except json.JSONDecodeError as e:
         print("Error decoding JSON:", e)
-        print("Response text:")
+        print("Response text:", response.text)
         ret = response.text
     return ret
 
@@ -134,6 +133,7 @@ def main():
                 available_room = []
     # 3. 获取可用场馆
                 for item_room in room_info['datas']['getOpeningRoom']['rows']:
+                    if flag: return True
                     if not item_room['disabled']:
                         YYRQ = "-".join([item['code_start'],item['code_end']])
                         YYKS = " ".join([appointment_day,item['code_start']])
@@ -198,7 +198,6 @@ def strat_appointment(day, start_time,stu_name, stu_id, cookie_file_path, sport_
     typeOfSport = sport_type
     appointment_day = day
     appointment_time_start = start_time
-    current_time_str = datetime.now().strftime("%H:%M")
     target_time_str = "12:30"
     if you_id == "":
         print("""请先配置你的信息...
@@ -213,6 +212,7 @@ def strat_appointment(day, start_time,stu_name, stu_id, cookie_file_path, sport_
         exit(1)
 
     while True:
+        current_time_str = datetime.now().strftime("%H:%M")
         if current_time_str < target_time_str:
             print(f"该没到点，现在是北京时间{current_time_str}")
             time.sleep(0.5)
