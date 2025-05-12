@@ -7,60 +7,82 @@ import time
 from datetime import datetime
 import requests
 import json
-
-
-
-
-
-# ----------config-------------- #
 debug = False
-you_name = ""
-you_id = ""
-YYLX="1.0"
-typeOfSport = "001" # 预约什么运动
-appointment_day = "2025-04-13"
-appointment_time_start = "16:00"
-cookie_file=""
-#----------config--------------- #
-
 
 
 getTimeList = "https://ehall.szu.edu.cn/qljfwapp/sys/lwSzuCgyy/sportVenue/getTimeList.do"
 getRoomList = "https://ehall.szu.edu.cn/qljfwapp/sys/lwSzuCgyy/modules/sportVenue/getOpeningRoom.do"
 insertUrl="https://ehall.szu.edu.cn/qljfwapp/sys/lwSzuCgyy/sportVenue/insertVenueBookingInfo.do"
-params_getRoomList={
+
+# ----------config-------------- #
+import types
+
+def init(**args):
+    """
+    001: 羽毛球
+    003: 排球
+    """
+    # 提取参数
+    you_name = args['you_name']
+    you_id = args['you_id']
+    YYLX = args['YYLX']  # 默认粤海是 "1.0"
+    typeOfSport = args['typeOfSport']  # 预约什么运动 "003"
+    appointment_day = args['appointment_day']
+    appointment_time_start = args['appointment_time_start']
+    cookie_file = args['cookie_file']
+    target_time_str = "12:30"
+    # 创建参数字典
+    params_getRoomList = {
         "XQDM": 1,
         "YYRQ": appointment_day,
         "YYLX": YYLX,
         "XMDM": typeOfSport,
         "KSSJ": "",
         "JSSJ": "",
-
     }
-params_getTimeList = {
-    "XQ": 1,
-    "YYRQ":appointment_day,
-    "YYLX" : YYLX,
-    "XMDM" : typeOfSport,
+    params_getTimeList = {
+        "XQ": 1,
+        "YYRQ": appointment_day,
+        "YYLX": YYLX,
+        "XMDM": typeOfSport,
+    }
+    params_insert = {
+        "DHID": "",
+        "YYRGH": you_id,
+        "CYRS": "",
+        "YYRXM": you_name,
+        "CGDM": "",
+        "CDWID": "",
+        "XMDM": typeOfSport,
+        "XQWID": "",
+        "KYYSJD": "",
+        "YYRQ": appointment_day,
+        "YYLX": YYLX,
+        "YYKS": "",
+        "YYJS": "",
+        "PC_OR_PHONE": "pc",
+    }
+    headers = {
+        'Cookie': ""
+    }
 
-}
-params_insert = {
-    "DHID":"",
-    "YYRGH": you_id,
-    "CYRS": "",
-    "YYRXM":you_name,
-    "CGDM":"",
-    "CDWID": "",
-    "XMDM": typeOfSport,
-    "XQWID":"",
-    "KYYSJD": "",
-    "YYRQ": appointment_day,
-    "YYLX": YYLX,
-    "YYKS":"",
-    "YYJS": "",
-    "PC_OR_PHONE": "pc",
+    # 创建命名空间对象
+    namespace = types.SimpleNamespace(
+        target_time_str=target_time_str,
+        you_name=you_name,
+        you_id=you_id,
+        YYLX=YYLX,
+        typeOfSport=typeOfSport,
+        appointment_day=appointment_day,
+        appointment_time_start=appointment_time_start,
+        cookie_file=cookie_file,
+        params_getRoomList=params_getRoomList,
+        params_getTimeList=params_getTimeList,
+        params_insert=params_insert,
+        headers=headers
+    )
+    return namespace
 
-}
 def load_cookies(file_path):
     with open(file_path, 'r') as file:
         cookie_str = file.read()
@@ -76,13 +98,11 @@ def set_cookies(file_path, cookie_str):
 
 
 
-headers = {
-    'Cookie': ""
-}
 
-def request_url(url, params_, headers_):
+
+def request_url(cfg, url, params_, headers_):
     response = requests.post(url, data=params_, headers=headers_)
-    set_cookies("cookie_file", response.headers['Set-Cookie'])
+    set_cookies(cfg.cookie_file, response.headers['Set-Cookie'])
     if debug:
         print(response.headers['Set-Cookie'])
     try:
@@ -95,11 +115,11 @@ def request_url(url, params_, headers_):
     return ret
 
 
-def main():
+def main(cfg):
     # 1. 获取当天可用的场次
-    cookies = load_cookies(cookie_file)
-    headers["Cookie"] = cookies
-    times_list = request_url(getTimeList, params_getTimeList, headers)
+    cookies = load_cookies(cfg.cookie_file)
+    cfg.headers["Cookie"] = cookies
+    times_list = request_url(cfg, getTimeList, cfg.params_getTimeList, cfg.headers)
     if debug:
         print("times_list", times_list)
         print("=" * 30)
@@ -121,12 +141,12 @@ def main():
             if flag:
                 return True
             else:
-                if item['code_start'] < appointment_time_start:
+                if item['code_start'] < cfg.appointment_time_start:
                     continue
-                params_getRoomList['KSSJ'] = item['code_start']
-                params_getRoomList['JSSJ'] = item['code_end']
-                headers['Cookie'] = load_cookies(cookie_file)
-                room_info = request_url(getRoomList, params_getRoomList, headers)
+                cfg.params_getRoomList['KSSJ'] = item['code_start']
+                cfg.params_getRoomList['JSSJ'] = item['code_end']
+                cfg.headers['Cookie'] = load_cookies(cfg.cookie_file)
+                room_info = request_url(cfg, getRoomList, cfg.params_getRoomList, cfg.headers)
                 if debug:
                     print("room_info", room_info)
                     print("=" * 30)
@@ -136,8 +156,8 @@ def main():
                     if flag: return True
                     if not item_room['disabled']:
                         YYRQ = "-".join([item['code_start'],item['code_end']])
-                        YYKS = " ".join([appointment_day,item['code_start']])
-                        YYJS = " ".join([appointment_day,item['code_end']])
+                        YYKS = " ".join([cfg.appointment_day,item['code_start']])
+                        YYJS = " ".join([cfg.appointment_day,item['code_end']])
                         available_room.append({
                             'CGDM': item_room['CGBM'],
                             'CDWID': item_room['WID'],
@@ -153,7 +173,7 @@ def main():
                 if len(available_room) > 0:
                     pre_param = []
                     for available_item in available_room:
-                        params_insert_ = params_insert
+                        params_insert_ = cfg.params_insert
                         params_insert_['CGDM'] = available_item['CGDM']
                         params_insert_['CDWID'] = available_item['CDWID']
                         params_insert_['KYYSJD'] = available_item['KYYSJD']
@@ -166,7 +186,7 @@ def main():
                     print("=" * 30)
                 if len(pre_param) > 0:
                     for param_item in pre_param:
-                        ret = request_url(insertUrl, param_item, headers)
+                        ret = request_url(cfg, insertUrl, param_item, cfg.headers)
                         if ret['msg'] == '成功':
                             print("success appointment!!!  速速付钱!!!")
                             flag = True
@@ -176,7 +196,7 @@ def main():
     else:
         print("网慢了，已经无！要不就是还没开！")
         return False
-def strat_appointment(day, start_time,stu_name, stu_id, cookie_file_path, sport_type="1.0", yylx = 1.0):
+def strat_appointment(day, start_time,stu_name, stu_id, cookie_file_path, sport_type="001", yylx = 1.0):
     """
     szu 体育场馆预约
     :param day: 预约日期
@@ -189,17 +209,17 @@ def strat_appointment(day, start_time,stu_name, stu_id, cookie_file_path, sport_
     :param yylx: 默认1.0
     :return: None
     """
-
-    global  you_name ,you_id, YYLX  ,typeOfSport ,appointment_day , appointment_time_start, cookie_file
-    you_name = stu_name
-    cookie_file = cookie_file_path
-    you_id = stu_id
-    YYLX = yylx
-    typeOfSport = sport_type
-    appointment_day = day
-    appointment_time_start = start_time
-    target_time_str = "12:30"
-    if you_id == "":
+    cfg = init(
+        you_name = stu_name,
+        cookie_file = cookie_file_path,
+        you_id = stu_id,
+        YYLX = yylx,
+        typeOfSport = sport_type,
+        appointment_day = day,
+        appointment_time_start = start_time,
+        target_time_str = "12:30"
+    )
+    if cfg.you_id == "":
         print("""请先配置你的信息...
                 you_name = ""
                 you_id = ""
@@ -213,12 +233,12 @@ def strat_appointment(day, start_time,stu_name, stu_id, cookie_file_path, sport_
 
     while True:
         current_time_str = datetime.now().strftime("%H:%M")
-        if current_time_str < target_time_str:
+        if current_time_str < cfg.target_time_str:
             print(f"该没到点，现在是北京时间{current_time_str}")
             time.sleep(0.5)
         else:
             try:
-                r = main()
+                r = main(cfg)
                 if r:
                     break
                 time.sleep(0.5)
