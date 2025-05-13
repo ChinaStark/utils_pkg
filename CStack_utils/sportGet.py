@@ -30,7 +30,7 @@ def init(**args):
     appointment_day = args['appointment_day']
     appointment_time_start = args['appointment_time_start']
     cookie_file = args['cookie_file']
-    target_time_str = "12:30"
+    target_time_str = args['target_time_str']
     # 创建参数字典
     params_getRoomList = {
         "XQDM": 1,
@@ -196,7 +196,7 @@ def main(cfg):
     else:
         print("网慢了，已经无！要不就是还没开！")
         return False
-def strat_appointment(day, start_time,stu_name, stu_id, cookie_file_path, sport_type="001", yylx = 1.0):
+def strat_appointment(day, start_time,stu_name, stu_id, cookie_file_path, sport_type="001", yylx = 1.0, target_time_str="12:30" ):
     """
     szu 体育场馆预约
     :param day: 预约日期
@@ -217,8 +217,9 @@ def strat_appointment(day, start_time,stu_name, stu_id, cookie_file_path, sport_
         typeOfSport = sport_type,
         appointment_day = day,
         appointment_time_start = start_time,
-        target_time_str = "12:30"
+        target_time_str = target_time_str
     )
+    print(target_time_str)
     if cfg.you_id == "":
         print("""请先配置你的信息...
                 you_name = ""
@@ -230,18 +231,23 @@ def strat_appointment(day, start_time,stu_name, stu_id, cookie_file_path, sport_
 
             """)
         exit(1)
-
+    max_retries = 0
     while True:
         current_time_str = datetime.now().strftime("%H:%M")
         if current_time_str < cfg.target_time_str:
-            print(f"该没到点，现在是北京时间{current_time_str}")
+            print(f"该没到点，现在是北京时间{current_time_str}, 而你的开始预约的的时间是{cfg.target_time_str}")
             time.sleep(0.5)
         else:
+            if max_retries >= 5:
+                print("超过最大尝试次数，程序已经关闭！")
+                exit(0)
             try:
                 r = main(cfg)
                 if r:
                     break
                 time.sleep(0.5)
-            except:
+            except Exception as e:
+                max_retries += 1
                 print("可能请求过快。。。可以考虑先暂停一下！！！")
+                print(e)
                 continue
