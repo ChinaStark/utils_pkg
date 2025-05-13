@@ -29,19 +29,15 @@ Copy the `path/to/cookies` to the variant `cookie_file`
 > Before you run, please write the cookies in you file and the path should give to the variant cookie_file.
 
 ```python
-# import the pkg you want use, 
-# and CStack_utils denote this pkg is provided by CStack
 from CStack_utils import *
-
 you_name = "xxx"
 you_id = "xxx"
-YYLX="1.0"
-typeOfSport = "001" # 预约什么运动，默认是羽毛球
-appointment_day = "2025-04-15"
-appointment_time_start = "16:00"
-cookie_file="" 
+YYLX="2.0"  # 预约类型，目前羽毛球是1.0，健身房和排球是2.0
+typeOfSport = "007" # 预约什么运动 001 羽毛球  003 排球
+appointment_day = "2025-05-14"
+appointment_time_start = "21:00" # 意愿开始时间
+cookie_file="./cookies"
 
-sportGet.strat_appointment(appointment_day, appointment_time_start,you_name, you_id, cookie_file)
-
+sportGet.strat_appointment(appointment_day, appointment_time_start,you_name, you_id, cookie_file,sport_type=typeOfSport,yylx=YYLX)
 ```
 

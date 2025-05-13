@@ -236,7 +236,7 @@ def strat_appointment(day, start_time,stu_name, stu_id, cookie_file_path, sport_
         current_time_str = datetime.now().strftime("%H:%M")
         if current_time_str < cfg.target_time_str:
             print(f"该没到点，现在是北京时间{current_time_str}, 而你的开始预约的的时间是{cfg.target_time_str}")
-            time.sleep(0.5)
+            time.sleep(1)
         else:
             if max_retries >= 5:
                 print("超过最大尝试次数，程序已经关闭！")
