@@ -86,7 +86,6 @@ def login(args, emit=None):
         login_button.click()
         if emit:
             emit('appointment_update', {'message': 'logined'})
-        logger.info(f"logined")
         WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.XPATH, '//*[@id="sportVenue"]/div[1]/div'))
         )

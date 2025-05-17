@@ -112,7 +112,7 @@ def request_url(cfg, url, params_, headers_):
         response_json = response.json()
         ret = response_json
     except Exception as e:
-        return False, "Bug in request_url:"+e
+        return False, "Bug in request_url:"+ str(e)
     return True, ret
 
 
@@ -137,7 +137,7 @@ def main(cfg, emit = None):
             emit('appointment_update', {'message': "Cookies 失效，正在重新登陆..."})
         if debug:
             print("Cookies 失效，正在重新登陆...")
-            return "need cookies"
+            return False, "need cookies"
     if debug:
         print("times_list", times_list)
         print("=" * 30)
@@ -254,20 +254,19 @@ def strat_appointment(day, start_time,stu_name, stu_id, cookie_file_path, sport_
     max_retries = 0
     while True:
         current_time_str = datetime.now()
-        if cfg.appointment_day != datetime.now().strftime("%Y-%m-%d"):
-            target_time = datetime.strptime(cfg.target_time_str, "%H:%M")
-            target_time = target_time.replace(year=current_time_str.year, month=current_time_str.month, day=current_time_str.day)
-
-            # 计算目标时间减去2分钟
-            target_time_minus_2mins = target_time - timedelta(minutes=2)
+        target_time = datetime.strptime(cfg.target_time_str, "%H:%M")
+        target_time = target_time.replace(year=current_time_str.year, month=current_time_str.month,
+                                          day=current_time_str.day)
+        target_time_minus_2mins = target_time - timedelta(minutes=2)
+        if cfg.appointment_day != datetime.now().strftime("%Y-%m-%d") and target_time > current_time_str:
             if target_time >= current_time_str >= target_time_minus_2mins:
-                emit('appointment_update', {'message':
-                                                f"没到点，现在是北京时间{current_time_str}, 建议12：28再来,所以程序停止"})
-                return False
-            else:
                 emit('appointment_update', {'message':
                                                 f"没到点，现在是北京时间{current_time_str}"})
                 continue
+            elif target_time > current_time_str:
+                emit('appointment_update', {'message':
+                                                f"没到点，现在是北京时间{current_time_str}, 建议12：28再来,所以程序停止"})
+                return False
         else:
             if max_retries >= 3:
                 if emit:
