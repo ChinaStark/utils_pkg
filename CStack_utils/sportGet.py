@@ -260,7 +260,14 @@ def strat_appointment(day, start_time,stu_name, stu_id, cookie_file_path, sport_
                                           day=target_day.day)
         print(target_time)
         target_time_minus_2mins = target_time - timedelta(minutes=2)
-        if cfg.appointment_day != datetime.now().strftime("%Y-%m-%d") and target_time > current_time_str:
+        if datetime.strptime(cfg.appointment_day, "%Y-%m-%d").date() < \
+                current_time_str.date() or \
+                datetime.strptime(cfg.appointment_day, "%Y-%m-%d").date() - current_time_str.date() >= timedelta(days=2):
+            emit('appointment_update', {'message':
+                                            f"时间有错,所以程序停止"})
+            return False
+        if (cfg.appointment_day > datetime.now().strftime("%Y-%m-%d") and
+                datetime.now().strftime("%H:%M") < "12:30"):
             if target_time >= current_time_str >= target_time_minus_2mins:
                 emit('appointment_update', {'message':
                                                 f"没到点，现在是北京时间{current_time_str}"})
