@@ -148,12 +148,14 @@
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script>
+        const socketPort = '{{ PORT }}';
+        const serverUrl = '{{ SERVER_URL }}';
         const form = document.getElementById('appointmentForm');
         const statusDiv = document.getElementById('status');
         const timeOptionsDiv = document.getElementById('time_options');
         const timeInput = document.getElementById('appointment_time_start');
         const appointmentStatusDiv = document.getElementById('appointment_status');
-        const socket = io('http://172.31.72.21:60006');
+        const socket = io(serverUrl+':'+socketPort);
         const clearStatusButton = document.getElementById('clearStatusButton');
 
         // Socket.IO event listeners
