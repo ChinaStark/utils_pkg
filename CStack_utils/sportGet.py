@@ -255,8 +255,10 @@ def strat_appointment(day, start_time,stu_name, stu_id, cookie_file_path, sport_
     while True:
         current_time_str = datetime.now()
         target_time = datetime.strptime(cfg.target_time_str, "%H:%M")
+        target_day = datetime.strptime(str(cfg.appointment_day), "%Y-%m-%d")
         target_time = target_time.replace(year=current_time_str.year, month=current_time_str.month,
-                                          day=current_time_str.day)
+                                          day=target_day.day)
+        print(target_time)
         target_time_minus_2mins = target_time - timedelta(minutes=2)
         if cfg.appointment_day != datetime.now().strftime("%Y-%m-%d") and target_time > current_time_str:
             if target_time >= current_time_str >= target_time_minus_2mins:

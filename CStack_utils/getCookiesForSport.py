@@ -38,7 +38,7 @@ def init_(args):
     # 创建 ChromeOptions 对象
     chrome_options = Options()
     # 添加无头模式（headless mode），使浏览器在后台运行
-    # chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--headless")
     # 忽略 SSL 错误/不安全证书警告
     chrome_options.add_argument('--ignore-certificate-errors')
     chrome_options.add_argument('--allow-insecure-localhost')
