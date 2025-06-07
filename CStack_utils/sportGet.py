@@ -208,7 +208,7 @@ def main(cfg, emit = None):
                             emit('appointment_update', {'message': "日期:{param_item['YYKS']}\n场馆:{param_item['CGDM']}"
                                                                    "预约失败!!!\n 开始下一场预约..."})
                         print(f"日期:{param_item['YYKS']}\n场馆:{param_item['CGDM']}预约失败!!!\n 开始下一场预约...")
-            return False, emit('appointment_update', {'message': "可能是你选择的时间段没了"})
+        return False, "可能是你选择的时间段没了"
     else:
         print("网慢了，已经无！要不就是还没开！")
         return False , "网慢了，已经无！要不就是还没开！"

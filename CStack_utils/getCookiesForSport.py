@@ -38,7 +38,7 @@ def init_(args):
     # 创建 ChromeOptions 对象
     chrome_options = Options()
     # 添加无头模式（headless mode），使浏览器在后台运行
-    chrome_options.add_argument("--headless")
+    # chrome_options.add_argument("--headless")
     # 忽略 SSL 错误/不安全证书警告
     chrome_options.add_argument('--ignore-certificate-errors')
     chrome_options.add_argument('--allow-insecure-localhost')
@@ -84,8 +84,6 @@ def login(args, emit=None):
         password_input.send_keys(args.pwd)
 
         login_button.click()
-        if emit:
-            emit('appointment_update', {'message': 'logined'})
         WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.XPATH, '//*[@id="sportVenue"]/div[1]/div'))
         )
@@ -119,7 +117,7 @@ def get_cookies(pwd, id, driver_path, cookies_path, emit=None):
     :param id: 学号
     :param driver_path: 驱动路径
     :param cookies_path: 你的cookies 文件
-    :return: 是否获取成功
+    :return: 是否获取成
     """
     args = types.SimpleNamespace(
         pwd=pwd,
@@ -135,8 +133,7 @@ def get_cookies(pwd, id, driver_path, cookies_path, emit=None):
         return False, data_or_msg
 
 
-if __name__ == '__main__':
-    get_cookies("lzl985211","2410103062",r"F:\PythonCode\utils_pkg\assest\webdriver\chromedriver.exe", r"F:\PythonCode\utils_pkg\test\cookies")
+# if __name__ == '__main__':
     # parser = argparse.ArgumentParser(description='处理命令行参数')
     # parser.add_argument('--pwd', default=None, help='密码')
     # parser.add_argument('--id', default=None, help='用户ID')

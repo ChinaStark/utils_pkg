@@ -9,7 +9,7 @@ from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 
 
-from CStack_utils import getCookiesForSport, sportGet
+from CStack_utils import sportGet
 
 app = Flask(__name__)
 CORS(app)
