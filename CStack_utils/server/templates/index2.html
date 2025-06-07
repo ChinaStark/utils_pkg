@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>预约信息</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+        label {
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: 100%; /* Make buttons the same width as inputs */
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #status {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #333;
+        }
+        .time-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .time-option {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            background-color: #f9f9f9;
+            color: #333;
+            font-size: 14px;
+            white-space: nowrap;
+            margin-bottom: 10px;
+        }
+        .time-option:hover {
+            background-color: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+        }
+        .time-option.selected {
+            background-color: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+        }
+        #appointment_status {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        .success {
+            color: #4CAF50;
+        }
+        .error {
+            color: #f44336;
+        }
+        .clear-button-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px; /* Add space above the button */
+        }
+        #clearStatusButton {
+            padding: 10px 20px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: 100%;  /* Make it the same width as other buttons */
+        }
+        #clearStatusButton:hover {
+            background-color: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>预约信息</h2>
+        <form id="appointmentForm">
+            <label for="you_name">姓名:</label>
+            <input type="text" id="you_name" name="you_name" required>
+            <label for="you_id">学号/工号:</label>
+            <input type="text" id="you_id" name="you_id" required>
+            <label for="password">密码:</label>
+            <input type="password" id="password" name="password" required>
+            <label for="YYLX">身份类型:</label>
+            <select id="YYLX" name="YYLX">
+                <option value="1.0">1.0</option>
+                <option value="2.0">2.0</option>
+            </select>
+            <label for="typeOfSport">运动类型:</label>
+            <select id="typeOfSport" name="typeOfSport">
+                <option value="001">羽毛球</option>
+                <option value="003">排球</option>
+                <option value="007">健身</option>
+            </select>
+            <label for="appointment_day">预约日期:</label>
+            <input type="date" id="appointment_day" name="appointment_day" required>
+            <label for="appointment_time_start">预约时间:</label>
+            <div id="time_options" class="time-options"></div>
+            <input type="hidden" id="appointment_time_start" name="appointment_time_start" required>
+            <button type="submit">提交预约</button>
+        </form>
+        <div class="clear-button-container">
+            <button id="clearStatusButton">清空状态</button>
+        </div>
+        <div id="appointment_status"></div>
+        <div id="status"></div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        const form = document.getElementById('appointmentForm');
+        const statusDiv = document.getElementById('status');
+        const timeOptionsDiv = document.getElementById('time_options');
+        const timeInput = document.getElementById('appointment_time_start');
+        const appointmentStatusDiv = document.getElementById('appointment_status');
+        const socket = io('http://172.31.72.21:60006');
+        const clearStatusButton = document.getElementById('clearStatusButton');
+
+        // Socket.IO event listeners
+        socket.on('appointment_response', (result) => {
+            if (result.success) {
+                appointmentStatusDiv.innerHTML += `<p class="success">${result.message || '预约成功！'}</p>`;
+            } else {
+                appointmentStatusDiv.innerHTML += `<p class="error">错误：${result.error || result.message || '预约失败'}</p>`;
+            }
+        });
+
+        socket.on('appointment_update', (update) => {
+            if (update.message) {
+                appointmentStatusDiv.innerHTML += `<p>${update.message}</p>`;
+            } else if (update.error) {
+                appointmentStatusDiv.innerHTML += `<p class="error">${update.error}</p>`;
+            }
+        });
+
+        const generateTimeOptions = () => {
+            const times = [];
+            for (let hour = 8; hour < 22; hour++) {
+                times.push(`${hour}:00`);
+            }
+            timeOptionsDiv.innerHTML = '';
+            times.forEach(time => {
+                const timeOption = document.createElement('div');
+                timeOption.classList.add('time-option');
+                timeOption.textContent = time;
+                timeOption.addEventListener('click', () => {
+                    document.querySelectorAll('.time-option.selected').forEach(selected => {
+                        selected.classList.remove('selected');
+                    });
+                    timeOption.classList.add('selected');
+                    timeInput.value = time;
+                });
+                timeOptionsDiv.appendChild(timeOption);
+            });
+        };
+
+        generateTimeOptions();
+
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
+            appointmentStatusDiv.innerHTML = "";
+            const formData = new FormData(form);
+            const data = {};
+            formData.forEach((value, key) => {
+                data[key] = value;
+            });
+
+            if (!data.appointment_time_start) {
+                statusDiv.textContent = "请选择预约时间。";
+                return;
+            }
+
+            appointmentStatusDiv.innerHTML = "正在提交...需要等待10s左右"
+            socket.emit('make_appointment', data);
+        });
+
+        clearStatusButton.addEventListener('click', () => {
+            appointmentStatusDiv.innerHTML = '';
+        });
+    </script>
+</body>
+</html>
