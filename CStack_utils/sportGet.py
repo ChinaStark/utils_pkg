@@ -284,7 +284,7 @@ def strat_appointment(day, start_time,stu_name, stu_id, cookie_file_path, sport_
                 return True
             elif msg_main == "need cookies":
                 flag, msg = getCookiesForSport.get_cookies(password, stu_id,
-                                               "../../assest/webdriver/chromedriver.exe",
+                                               "server/assest/webdriver/chromedriver.exe",
                                                cookie_file_path, emit=emit)
                 if not flag:
                     emit('appointment_update', {'message': "获取cookies失败，原因是" + msg})
