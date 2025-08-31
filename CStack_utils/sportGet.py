@@ -212,37 +212,33 @@ def main(cfg, emit = None):
     else:
         print("网慢了，已经无！要不就是还没开！")
         return False , "网慢了，已经无！要不就是还没开！"
-def strat_appointment(day, start_time,stu_name, stu_id, cookie_file_path, sport_type="001", yylx = 1.0,
-                      target_time_str="12:30",emit=None, password=None):
+def strat_appointment(day, start_time, stu_name, stu_id, cookie_file_path, sport_type="001", yylx=1.0,
+                      target_time_str="12:30", emit=None, password=None, using_web=True):
     """
     szu 体育场馆预约
-    :param cookies_path:
-    :param target_time_str:
-    :param emit:
-    :param password:
-    :param day: 预约日期
-    :param start_time: 预约时间段的开始时间
-    :param sport_type: 运动类型， 默认是羽毛球
-    :param stu_name: 你的名字
-    :param stu_id: 你的学号
-    :param cookie_file_path: cookies的文件位置，也就是你复制一个cookies到一个txt或者什么文件中然后把路径传到这里，注意粘贴cookie的时候
-    不要有换行（基本就是在最后有一个换行，你记得删除就行）
-    :param yylx: 默认1.0
-    :return: None
     """
-    if debug : print(emit)
+    def notify(msg: str):
+        """统一消息输出，根据 using_web 来决定用 print 还是 emit"""
+        if using_web and emit:
+            emit('appointment_update', {'message': msg})
+        else:
+            print(msg)
+
+    if debug:
+        notify(emit)
+
     cfg = init(
-        you_name = stu_name,
-        cookie_file = cookie_file_path,
-        you_id = stu_id,
-        YYLX = yylx,
-        typeOfSport = sport_type,
-        appointment_day = day,
-        appointment_time_start = start_time,
-        target_time_str = target_time_str
+        you_name=stu_name,
+        cookie_file=cookie_file_path,
+        you_id=stu_id,
+        YYLX=yylx,
+        typeOfSport=sport_type,
+        appointment_day=day,
+        appointment_time_start=start_time,
+        target_time_str=target_time_str
     )
     if cfg.you_id == "":
-        print("""请先配置你的信息...
+        notify("""请先配置你的信息...
                 you_name = ""
                 you_id = ""
                 YYLX="1.0" 
@@ -251,6 +247,7 @@ def strat_appointment(day, start_time,stu_name, stu_id, cookie_file_path, sport_
                 appointment_time_start = "16:00" 预约时间
             """)
         return False
+
     max_retries = 0
     while True:
         current_time_str = datetime.now()
@@ -260,49 +257,41 @@ def strat_appointment(day, start_time,stu_name, stu_id, cookie_file_path, sport_
                                           day=target_day.day)
         print(target_time)
         target_time_minus_2mins = target_time - timedelta(minutes=2)
-        if datetime.strptime(cfg.appointment_day, "%Y-%m-%d").date() < \
-                current_time_str.date() or \
+
+        if datetime.strptime(cfg.appointment_day, "%Y-%m-%d").date() < current_time_str.date() or \
                 datetime.strptime(cfg.appointment_day, "%Y-%m-%d").date() - current_time_str.date() >= timedelta(days=2):
-            emit('appointment_update', {'message':
-                                            f"时间有错,所以程序停止"})
+            notify("时间有错,所以程序停止")
             return False
+
         if (cfg.appointment_day > datetime.now().strftime("%Y-%m-%d") and
                 datetime.now().strftime("%H:%M") < "12:30"):
             if target_time >= current_time_str >= target_time_minus_2mins:
-                emit('appointment_update', {'message':
-                                                f"没到点，现在是北京时间{current_time_str}"})
+                notify(f"没到点，现在是北京时间{current_time_str}")
                 continue
             elif target_time > current_time_str:
-                emit('appointment_update', {'message':
-                                                f"没到点，现在是北京时间{current_time_str}, 建议12：28再来,所以程序停止"})
+                notify(f"没到点，现在是北京时间{current_time_str}, 建议12：28再来,所以程序停止")
                 return False
         else:
             if max_retries >= 3:
-                if emit:
-                    emit('appointment_update', {'message': "超过最大尝试次数，程序已经关闭！"})
-                else:
-                    print("超过最大尝试次数，程序已经关闭！")
+                notify("超过最大尝试次数，程序已经关闭！")
                 return False
             max_retries += 1
             _, msg_main = main(cfg, emit=emit)
             if msg_main == "success":
-                if emit:
-                    emit('appointment_update', {'message': "success appointment!!!  速速付钱!!!"})
+                notify("success appointment!!!  速速付钱!!!")
                 return True
             elif msg_main == "need cookies":
-                flag, msg = getCookiesForSport.get_cookies(password, stu_id,
-                                               "../server/assest/webdriver/chromedriver.exe",
-                                               cookie_file_path, emit=emit)
+                flag, msg = getCookiesForSport.get_cookies(
+                    password, stu_id,
+                    "../server/assest/webdriver/chromedriver.exe",
+                    cookie_file_path, emit=emit
+                )
                 if not flag:
-                    emit('appointment_update', {'message': "获取cookies失败，原因是" + msg})
-                #意思是获取cookies 不算次数
-                else: max_retries -= 1
-            else:
-                if emit:
-                    emit('appointment_update', {'message': "预约失败，原因是" + msg_main})
+                    notify("获取cookies失败，原因是" + msg)
                 else:
-                    print("预约失败，原因是" + msg_main)
+                    max_retries -= 1  # 获取cookies不算尝试次数
+            else:
+                notify("预约失败，原因是" + msg_main)
                 time.sleep(1)
                 continue
-
 
