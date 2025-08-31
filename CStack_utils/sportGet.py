@@ -213,13 +213,13 @@ def main(cfg, emit = None):
         print("网慢了，已经无！要不就是还没开！")
         return False , "网慢了，已经无！要不就是还没开！"
 def strat_appointment(day, start_time, stu_name, stu_id, cookie_file_path, sport_type="001", yylx=1.0,
-                      target_time_str="12:30", emit=None, password=None, using_web=True):
+                      target_time_str="12:30", emit=None, password=None):
     """
     szu 体育场馆预约
     """
     def notify(msg: str):
         """统一消息输出，根据 using_web 来决定用 print 还是 emit"""
-        if using_web and emit:
+        if emit:
             emit('appointment_update', {'message': msg})
         else:
             print(msg)
