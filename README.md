@@ -19,9 +19,9 @@ pip install .
 
 ## Get and write cookies 
 ### step 1
-![](static\cut.png)
+![](static/cut.png)
 ### step 2
-![](static\QQ20250414-144632.png)
+![](static/QQ20250414-144632.png)
 ### step 3
 Copy the `path/to/cookies` to the variant `cookie_file`
 ## Run
@@ -40,4 +40,5 @@ cookie_file="./cookies"
 
 sportGet.strat_appointment(appointment_day, appointment_time_start,you_name, you_id, cookie_file,sport_type=typeOfSport,yylx=YYLX)
 ```
+
 
