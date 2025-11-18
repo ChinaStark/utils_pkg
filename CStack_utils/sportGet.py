@@ -2,7 +2,7 @@
 # @Author : ZhiliangLong
 # @File : sportGet.py
 # @Time : 2025/3/22 20:19
-
+import re
 import time
 from datetime import datetime, timedelta
 import requests
@@ -91,103 +91,141 @@ def load_cookies(file_path):
     return cookie_str
 
 def set_cookies(file_path, cookie_str):
-    with open(file_path, 'r') as file:
-        cookie_str_ = file.read()
-    new_content = cookie_str_.replace('{VAR_JACK}', cookie_str)
-    with open(file_path, 'w') as file:
-        file.write(new_content)
+    new_weu_match = re.search(r"_WEU=([^;]+)", cookie_str)
+    if not new_weu_match:
+        raise ValueError("cookie_str 中找不到 _WEU 字段")
 
+    new_weu = new_weu_match.group(1)
 
+    with open(file_path, 'r', encoding="utf-8") as f:
+        content = f.read()
 
+    # 替换文件里现有的 _WEU 值
+    new_content = re.sub(
+        r"_WEU=[^;]+",      # 匹配 _WEU=到分号之间
+        f"_WEU={new_weu}",  # 替换为新的值
+        content
+    )
 
-
-
+    with open(file_path, 'w', encoding="utf-8") as f:
+        f.write(new_content)
 def request_url(cfg, url, params_, headers_):
     try:
         response = requests.post(url, data=params_, headers=headers_)
-        set_cookies(cfg.cookie_file, response.headers['Set-Cookie'])
+        cookie_header = response.headers.get('Set-Cookie')
+        if cookie_header:
+            set_cookies(cfg.cookie_file, cookie_header)
+        elif debug:
+            print('request_url: no Set-Cookie header in response')
         if debug:
             print(params_)
-            print(response.headers['Set-Cookie'])
+            if cookie_header:
+                print(cookie_header)
         response_json = response.json()
         ret = response_json
     except Exception as e:
-        return False, "Bug in request_url:"+ str(e)
+        return False, 'Bug in request_url:' + str(e)
     return True, ret
+def main(cfg, emit=None, cancel_callback=None):
+    def should_cancel():
+        return cancel_callback and cancel_callback()
 
+    if should_cancel():
+        return False, '用户取消'
 
-def main(cfg, emit = None):
-    # 1. 获取当天可用的场次
     try:
-        # 防止新用户没有cookies文件
         cookies = load_cookies(cfg.cookie_file)
-    except Exception as e:
-        if emit : emit('appointment_update', {'message': "检测你为新用户正在尝试登录获取Cookies..."})
-        if debug: print("检测你为新用户正在尝试登录获取Cookies...")
-        return False, "need cookies"
-    cfg.headers["Cookie"] = cookies
+    except Exception:
+        if emit:
+            emit('appointment_update', {'message': '检测你为新用户正在尝试登录获取 cookies...'})
+        if debug:
+            print('检测你为新用户正在尝试登录获取 cookies...')
+        return False, 'need cookies'
+
+    cfg.headers['Cookie'] = cookies
+    if should_cancel():
+        return False, '用户取消'
+
     flag_times_list, times_list = request_url(cfg, getTimeList, cfg.params_getTimeList, cfg.headers)
     if flag_times_list:
         if emit:
-            emit('appointment_update', {'message': "cookies检查成功"})
-        else:
-            print("cookies检查成功")
+            emit('appointment_update', {'message': 'cookies 校验成功'})
+        elif debug:
+            print('cookies 校验成功')
     else:
         if emit:
-            emit('appointment_update', {'message': "Cookies 失效，正在重新登陆..."})
+            emit('appointment_update', {'message': 'Cookies 失效，重新登录...'})
         if debug:
-            print("Cookies 失效，正在重新登陆...")
-            return False, "need cookies"
+            print('Cookies 失效，重新登录...')
+        return False, 'need cookies'
+
     if debug:
-        print("times_list", times_list)
-        print("=" * 30)
+        print('times_list', times_list)
+        print('=' * 30)
+    if should_cancel():
+        return False, '用户取消'
+
     available_times = []
     for item in times_list:
+        if should_cancel():
+            return False, '用户取消'
         if not item['disabled']:
             code_start, code_end = item['CODE'].split('-')
             available_times.append({
                 'code_start': code_start.strip(),
                 'code_end': code_end.strip()
             })
+
     if debug:
-        print("available_times", available_times)
-        print("=" * 30)
-    # 2. 获取当前可用的Room,这一步需要上一步的可用时间
+        print('available_times', available_times)
+        print('=' * 30)
+    if should_cancel():
+        return False, '用户取消'
+
     if len(available_times) > 0:
         for item in available_times:
+            if should_cancel():
+                return False, '用户取消'
             if item['code_start'] < cfg.appointment_time_start:
                 continue
             cfg.params_getRoomList['KSSJ'] = item['code_start']
             cfg.params_getRoomList['JSSJ'] = item['code_end']
             cfg.headers['Cookie'] = load_cookies(cfg.cookie_file)
+            if should_cancel():
+                return False, '用户取消'
             flags_room_info, room_info = request_url(cfg, getRoomList, cfg.params_getRoomList, cfg.headers)
-            if not flags_room_info: return False, room_info
+            if not flags_room_info:
+                return False, room_info
             if debug:
-                print("room_info", room_info)
-                print("=" * 30)
+                print('room_info', room_info)
+                print('=' * 30)
             available_room = []
-    # 3. 获取可用场馆
             for item_room in room_info['datas']['getOpeningRoom']['rows']:
+                if should_cancel():
+                    return False, '用户取消'
                 if not item_room['disabled']:
-                    YYRQ = "-".join([item['code_start'],item['code_end']])
-                    YYKS = " ".join([cfg.appointment_day,item['code_start']])
-                    YYJS = " ".join([cfg.appointment_day,item['code_end']])
+                    yyrq = '-'.join([item['code_start'], item['code_end']])
+                    yyks = ' '.join([cfg.appointment_day, item['code_start']])
+                    yyjs = ' '.join([cfg.appointment_day, item['code_end']])
                     available_room.append({
                         'CGDM': item_room['CGBM'],
                         'CDWID': item_room['WID'],
                         'XQWID': item_room['XQDM'],
-                        'KYYSJD': YYRQ,
-                        'YYKS': YYKS,
-                        'YYJS': YYJS,
+                        'KYYSJD': yyrq,
+                        'YYKS': yyks,
+                        'YYJS': yyjs,
                     })
             if debug:
-                print("available_room", available_room)
-                print("=" * 30)
-    # 4. 构建预约请求体
+                print('available_room', available_room)
+                print('=' * 30)
+            if should_cancel():
+                return False, '用户取消'
             if len(available_room) > 0:
                 pre_param = []
                 for available_item in available_room:
-                    params_insert_ = cfg.params_insert
+                    if should_cancel():
+                        return False, '用户取消'
+                    params_insert_ = cfg.params_insert.copy()
                     params_insert_['CGDM'] = available_item['CGDM']
                     params_insert_['CDWID'] = available_item['CDWID']
                     params_insert_['KYYSJD'] = available_item['KYYSJD']
@@ -196,36 +234,41 @@ def main(cfg, emit = None):
                     params_insert_['XQWID'] = available_item['XQWID']
                     pre_param.append(params_insert_)
             if debug:
-                print("pre_param", pre_param)
-                print("=" * 30)
+                print('pre_param', pre_param)
+                print('=' * 30)
             if len(pre_param) > 0:
                 for param_item in pre_param:
+                    if should_cancel():
+                        return False, '用户取消'
                     _, ret = request_url(cfg, insertUrl, param_item, cfg.headers)
-                    if ret['msg'] == '成功':
-                        return True, "success"
-                    else:
-                        if emit:
-                            emit('appointment_update', {'message': "日期:{param_item['YYKS']}\n场馆:{param_item['CGDM']}"
-                                                                   "预约失败!!!\n 开始下一场预约..."})
+                    if ret.get('msg') == '成功':
+                        return True, 'success'
+                    if emit:
+                        emit('appointment_update', {
+                            'message': f"日期:{param_item['YYKS']}\n场馆:{param_item['CGDM']}预约失败!!!\n 开始下一场预约..."
+                        })
+                    if debug:
                         print(f"日期:{param_item['YYKS']}\n场馆:{param_item['CGDM']}预约失败!!!\n 开始下一场预约...")
-        return False, "可能是你选择的时间段没了"
+        return False, '可能是你选择的时间段没了'
     else:
-        print("网慢了，已经无！要不就是还没开！")
-        return False , "网慢了，已经无！要不就是还没开！"
+        if debug:
+            print('网慢了，已经无！要不就是还没开！')
+        return False, '网慢了，已经无！要不就是还没开！'
 def strat_appointment(day, start_time, stu_name, stu_id, cookie_file_path, sport_type="001", yylx=1.0,
-                      target_time_str="12:30", emit=None, password=None):
-    """
-    szu 体育场馆预约
-    """
+                      target_time_str="12:30", emit=None, password=None, wait_until_target=False,
+                      max_attempts=3, retry_delay=1, window_lead_minutes=2, cancel_callback=None):
     def notify(msg: str):
-        """统一消息输出，根据 using_web 来决定用 print 还是 emit"""
         if emit:
             emit('appointment_update', {'message': msg})
         else:
             print(msg)
 
-    if debug:
-        notify(emit)
+    def should_cancel():
+        return cancel_callback and cancel_callback()
+
+    def cancel_result():
+        notify('用户取消，任务已停止')
+        return False, '用户取消'
 
     cfg = init(
         you_name=stu_name,
@@ -237,61 +280,86 @@ def strat_appointment(day, start_time, stu_name, stu_id, cookie_file_path, sport
         appointment_time_start=start_time,
         target_time_str=target_time_str
     )
-    if cfg.you_id == "":
-        notify("""请先配置你的信息...
-                you_name = ""
-                you_id = ""
-                YYLX="1.0" 
-                typeOfSport = "001" # 001 默认是羽毛球
-                appointment_day = "2025-04-13" 预约日期
-                appointment_time_start = "16:00" 预约时间
-            """)
-        return False
 
-    max_retries = 0
-    while True:
-        current_time_str = datetime.now()
-        target_time = datetime.strptime(cfg.target_time_str, "%H:%M")
-        target_day = datetime.strptime(str(cfg.appointment_day), "%Y-%m-%d")
-        target_time = target_time.replace(year=current_time_str.year, month=current_time_str.month,
-                                          day=target_day.day)
-        print(target_time)
-        target_time_minus_2mins = target_time - timedelta(minutes=2)
+    if not cfg.you_id:
+        notify('请先配置个人信息')
+        return False, 'missing user information'
 
-        if datetime.strptime(cfg.appointment_day, "%Y-%m-%d").date() < current_time_str.date() or \
-                datetime.strptime(cfg.appointment_day, "%Y-%m-%d").date() - current_time_str.date() >= timedelta(days=2):
-            notify("时间有错,所以程序停止")
-            return False
+    today = datetime.now().date()
+    appointment_date = datetime.strptime(cfg.appointment_day, '%Y-%m-%d').date()
+    if appointment_date < today:
+        notify('预约日期已经过去，程序停止')
+        return False, 'appointment day already passed'
+    if appointment_date - today >= timedelta(days=2):
+        notify('预约日期超出允许范围，请确认系统是否开放')
+        return False, 'appointment day out of range'
 
-        if (cfg.appointment_day > datetime.now().strftime("%Y-%m-%d") and
-                datetime.now().strftime("%H:%M") < "12:30"):
-            if target_time >= current_time_str >= target_time_minus_2mins:
-                notify(f"没到点，现在是北京时间{current_time_str}")
-                continue
-            elif target_time > current_time_str:
-                notify(f"没到点，现在是北京时间{current_time_str}, 建议12：28再来,所以程序停止")
-                return False
-        else:
-            if max_retries >= 3:
-                notify("超过最大尝试次数，程序已经关闭！")
-                return False
-            max_retries += 1
-            _, msg_main = main(cfg, emit=emit)
-            if msg_main == "success":
-                notify("success appointment!!!  速速付钱!!!")
-                return True
-            elif msg_main == "need cookies":
-                flag, msg = getCookiesForSport.get_cookies(
-                    password, stu_id,
-                    "../server/assest/webdriver/chromedriver.exe",
-                    cookie_file_path, emit=emit
-                )
-                if not flag:
-                    notify("获取cookies失败，原因是" + msg)
-                else:
-                    max_retries -= 1  # 获取cookies不算尝试次数
-            else:
-                notify("预约失败，原因是" + msg_main)
-                time.sleep(1)
-                continue
+    if should_cancel():
+        return cancel_result()
 
+    target_time = None
+    if target_time_str:
+        try:
+            target_dt = datetime.strptime(cfg.target_time_str, '%H:%M').time()
+            target_time = datetime.combine(appointment_date, target_dt)
+        except ValueError:
+            notify(f'目标时间格式错误: {cfg.target_time_str}')
+            return False, 'invalid target time'
+
+    if wait_until_target and target_time:
+        earliest_attempt = target_time - timedelta(minutes=window_lead_minutes)
+        while True:
+            if should_cancel():
+                return cancel_result()
+            now = datetime.now()
+            if now >= earliest_attempt:
+                break
+            wait_seconds = (earliest_attempt - now).total_seconds()
+            if wait_seconds <= 0:
+                break
+            sleep_seconds = max(1, min(30, wait_seconds))
+            notify(f'未到预约开放时间，{int(sleep_seconds)} 秒后再尝试...')
+            time.sleep(sleep_seconds)
+
+    attempts = 0
+    last_error = ''
+    while attempts < max_attempts:
+        if should_cancel():
+            return cancel_result()
+        attempts += 1
+        success, msg_main = main(cfg, emit=emit, cancel_callback=should_cancel)
+        if success:
+            notify('预约成功，速速付款!')
+            return True, 'success'
+        if msg_main == 'need cookies':
+            if not password:
+                last_error = 'cookies expired and password missing'
+                notify('Cookies 失效且没有提供密码，无法自动刷新')
+                break
+            if should_cancel():
+                return cancel_result()
+            flag, msg = getCookiesForSport.get_cookies(
+                password, stu_id,
+                '../server/assest/webdriver/chromedriver.exe',
+                cookie_file_path, emit=emit
+            )
+            if not flag:
+                last_error = msg
+                notify('获取 cookies 失败，原因是 ' + msg)
+                break
+            notify('Cookies 已刷新，继续尝试预约...')
+            attempts -= 1
+            continue
+        last_error = msg_main or 'unknown error'
+        notify('预约失败，原因是 ' + last_error)
+        if attempts < max_attempts:
+            if should_cancel():
+                return cancel_result()
+            time.sleep(retry_delay)
+
+    if should_cancel():
+        return cancel_result()
+
+    if not last_error:
+        last_error = '预约失败'
+    return False, last_error + f' (尝试 {attempts} 次)'

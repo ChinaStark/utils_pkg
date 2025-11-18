@@ -15,7 +15,7 @@ setup(
     ],
     python_requires='>=3.9',
     description='A small tool library from CStark',
-    long_description=open('README.md').read(),
+    long_description=open('README.md', encoding='utf-8').read(),
     author='CStark',
     author_email='CStark@Stark.com',
     url='https://github.com/CStark',

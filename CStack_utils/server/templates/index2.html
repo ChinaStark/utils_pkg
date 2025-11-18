@@ -1,224 +1,689 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>预约信息</title>
-    <style>
-        body {
-            font-family: sans-serif;
-            margin: 20px;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        form {
-            display: flex;
-            flex-direction: column;
-            margin-bottom: 20px;
-        }
-        label {
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        input, select {
-            padding: 8px;
-            margin-bottom: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        button {
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            width: 100%; /* Make buttons the same width as inputs */
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        #status {
-            margin-top: 10px;
-            font-weight: bold;
-            color: #333;
-        }
-        .time-options {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-top: 10px;
-        }
-        .time-option {
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            background-color: #f9f9f9;
-            color: #333;
-            font-size: 14px;
-            white-space: nowrap;
-            margin-bottom: 10px;
-        }
-        .time-option:hover {
-            background-color: #4CAF50;
-            color: white;
-            border-color: #4CAF50;
-        }
-        .time-option.selected {
-            background-color: #4CAF50;
-            color: white;
-            border-color: #4CAF50;
-        }
-        #appointment_status {
-            margin-top: 20px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #f9f9f9;
-        }
-        .success {
-            color: #4CAF50;
-        }
-        .error {
-            color: #f44336;
-        }
-        .clear-button-container {
-            display: flex;
-            justify-content: center;
-            margin-top: 20px; /* Add space above the button */
-        }
-        #clearStatusButton {
-            padding: 10px 20px;
-            background-color: #f44336;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            width: 100%;  /* Make it the same width as other buttons */
-        }
-        #clearStatusButton:hover {
-            background-color: #d32f2f;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h2>预约信息</h2>
-        <form id="appointmentForm">
-            <label for="you_name">姓名:</label>
-            <input type="text" id="you_name" name="you_name" required>
-            <label for="you_id">学号/工号:</label>
-            <input type="text" id="you_id" name="you_id" required>
-            <label for="password">密码:</label>
-            <input type="password" id="password" name="password" required>
-            <label for="YYLX">身份类型:</label>
-            <select id="YYLX" name="YYLX">
-                <option value="1.0">1.0</option>
-                <option value="2.0">2.0</option>
-            </select>
-            <label for="typeOfSport">运动类型:</label>
-            <select id="typeOfSport" name="typeOfSport">
-                <option value="001">羽毛球</option>
-                <option value="003">排球</option>
-                <option value="007">健身</option>
-            </select>
-            <label for="appointment_day">预约日期:</label>
-            <input type="date" id="appointment_day" name="appointment_day" required>
-            <label for="appointment_time_start">预约时间:</label>
-            <div id="time_options" class="time-options"></div>
-            <input type="hidden" id="appointment_time_start" name="appointment_time_start" required>
-            <button type="submit">提交预约</button>
-        </form>
-        <div class="clear-button-container">
-            <button id="clearStatusButton">清空状态</button>
+
+    <!DOCTYPE html>
+    <html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>运动场馆预约助手</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+                background: #f5f6f8;
+                color: #333;
+            }
+            .container {
+                max-width: 960px;
+                margin: 30px auto;
+                padding: 0 16px;
+            }
+            h1, h2 {
+                text-align: center;
+                margin-bottom: 24px;
+            }
+            .card {
+                background: #fff;
+                border-radius: 10px;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                padding: 20px;
+                margin-bottom: 20px;
+            }
+            form {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 12px 16px;
+            }
+            label {
+                display: block;
+                font-weight: bold;
+                margin-bottom: 6px;
+            }
+            input, select, button, textarea {
+                width: 100%;
+                padding: 8px;
+                border: 1px solid #d0d3d9;
+                border-radius: 6px;
+                box-sizing: border-box;
+                font-size: 14px;
+            }
+            textarea {
+                resize: vertical;
+                min-height: 80px;
+            }
+            button {
+                cursor: pointer;
+                background-color: #2f80ed;
+                color: #fff;
+                border: none;
+                font-weight: bold;
+                transition: background-color 0.2s ease;
+            }
+            button:hover {
+                background-color: #1c64d1;
+            }
+            .secondary {
+                background-color: #6c757d;
+            }
+            .secondary:hover {
+                background-color: #555e66;
+            }
+            .danger {
+                background-color: #d9534f;
+            }
+            .danger:hover {
+                background-color: #c12f2c;
+            }
+            .hidden {
+                display: none;
+            }
+            .flex-row {
+                display: flex;
+                gap: 12px;
+                flex-wrap: wrap;
+                align-items: center;
+            }
+            .jobs-table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            .jobs-table th, .jobs-table td {
+                border: 1px solid #e4e7eb;
+                padding: 8px;
+                text-align: left;
+            }
+            .jobs-table th {
+                background: #f1f4f8;
+            }
+            .badge {
+                display: inline-block;
+                padding: 2px 8px;
+                border-radius: 12px;
+                font-size: 12px;
+                color: #fff;
+            }
+            .badge.scheduled { background-color: #6c757d; }
+            .badge.running { background-color: #17a2b8; }
+            .badge.completed { background-color: #28a745; }
+            .badge.failed { background-color: #d9534f; }
+            .badge.cancelled { background-color: #999; }
+            #logViewer {
+                background: #0b0d11;
+                color: #d0d7e3;
+                font-family: Consolas, Menlo, monospace;
+                padding: 16px;
+                border-radius: 8px;
+                max-height: 280px;
+                overflow-y: auto;
+                white-space: pre-wrap;
+            }
+            .time-options {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .time-option {
+                padding: 6px 10px;
+                border-radius: 6px;
+                background: #f1f4f8;
+                cursor: pointer;
+                border: 1px solid transparent;
+            }
+            .time-option.selected {
+                background: #2f80ed;
+                color: #fff;
+                border-color: #1c64d1;
+            }
+            .form-actions {
+                display: flex;
+                gap: 12px;
+                flex-direction: column;
+            }
+            @media (max-width: 600px) {
+                form {
+                    grid-template-columns: 1fr;
+                }
+                .form-actions {
+                    flex-direction: column;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>运动场馆预约助手</h1>
+            <div id="authSection" class="card">
+                <h2>登录</h2>
+                <form id="loginForm">
+                    <div>
+                        <label for="login_user_id">学号/工号</label>
+                        <input id="login_user_id" name="userId" required>
+                    </div>
+                    <div>
+                        <label for="login_password">密码</label>
+                        <input id="login_password" name="password" type="password" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit">登录</button>
+                        <button id="toggleRegister" type="button" class="secondary">没有账号？前往注册</button>
+                    </div>
+                </form>
+                <div id="loginFeedback"></div>
+            </div>
+
+            <div id="registerSection" class="card hidden">
+                <h2>注册</h2>
+                <form id="registerForm">
+                    <div>
+                        <label for="register_user_id">学号/工号</label>
+                        <input id="register_user_id" name="userId" required>
+                    </div>
+                    <div>
+                        <label for="register_name">昵称（选填）</label>
+                        <input id="register_name" name="name" placeholder="默认使用学号/工号">
+                    </div>
+                    <div>
+                        <label for="register_password">密码</label>
+                        <input id="register_password" name="password" type="password" required>
+                    </div>
+                    <div>
+                        <label for="register_confirm">确认密码</label>
+                        <input id="register_confirm" name="confirmPassword" type="password" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit">注册</button>
+                        <button id="backToLogin" type="button" class="secondary">已有账号？返回登录</button>
+                    </div>
+                </form>
+                <div id="registerFeedback"></div>
+            </div>
+
+            <div id="appSection" class="hidden">
+                <div class="card">
+                    <div class="flex-row" id="userInfo"></div>
+                </div>
+                <div class="card">
+                    <h2>创建预约任务</h2>
+                    <form id="appointmentForm">
+                        <div>
+                            <label for="you_name">姓名</label>
+                            <input id="you_name" name="youName" required>
+                        </div>
+                        <div>
+                            <label for="auth_account">统一认证账号</label>
+                            <input id="auth_account" name="authAccount" required>
+                        </div>
+                        <div>
+                            <label for="student_password">统一认证密码（自动刷新 Cookies 用）</label>
+                            <input id="student_password" name="password" type="password" required>
+                        </div>
+                            <label for="yylx">身份类型</label>
+                            <select id="yylx" name="yylx">
+                                <option value="1.0">1.0</option>
+                                <option value="2.0">2.0</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="sport_type">运动类型</label>
+                            <select id="sport_type" name="sportType">
+                                <option value="001">羽毛球</option>
+                                <option value="003">排球</option>
+                                <option value="007">健身</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="appointment_day">预约日期</label>
+                            <input id="appointment_day" name="appointmentDay" type="date" required>
+                        </div>
+                        <div>
+                            <label>预约时间段</label>
+                            <div id="time_options" class="time-options"></div>
+                            <input type="hidden" id="appointment_time_start" name="appointmentTime" required>
+                        </div>
+                        <div>
+                            <label for="target_time">平台开放时间（默认 12:30）</label>
+                            <input id="target_time" name="targetTime" type="time" value="12:30">
+                        </div>
+                        <div>
+                            <label for="run_at">任务执行时间（默认立即执行）</label>
+                            <input id="run_at" name="runAt" type="datetime-local">
+                        </div>
+                        <div>
+                            <label for="wait_until_target">执行策略</label>
+                            <select id="wait_until_target" name="waitUntilTarget">
+                                <option value="false" selected>立即按照当前时间执行</option>
+                                <option value="true">执行时等待到开放时间前的窗口</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="max_attempts">最大尝试次数</label>
+                            <input id="max_attempts" name="maxAttempts" type="number" min="1" max="10" value="3">
+                        </div>
+                        <div>
+                            <label for="retry_delay">失败后重试间隔（秒）</label>
+                            <input id="retry_delay" name="retryDelay" type="number" min="1" max="60" value="2">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit">创建预约任务</button>
+                            <button type="button" id="clearLog" class="secondary">清空日志</button>
+                        </div>
+                    </form>
+                    <div id="appointmentFeedback"></div>
+                </div>
+
+                <div class="card">
+                    <div class="flex-row" style="justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0;">我的预约任务</h2>
+                        <div class="flex-row">
+                            <button id="refreshJobs" type="button" class="secondary">刷新列表</button>
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="jobs-table" id="jobsTable">
+                            <thead>
+                                <tr>
+                                    <th>编号</th>
+                                    <th>预约日期</th>
+                                    <th>场地时间</th>
+                                    <th>账号</th>
+                                    <th>执行时间</th>
+                                    <th>状态</th>
+                                    <th>结果</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="jobsBody">
+                                <tr><td colspan="8" style="text-align:center;">暂无任务</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>任务日志</h2>
+                    <div id="logViewer">请选择任务查看实时日志...</div>
+                </div>
+            </div>
         </div>
-        <div id="appointment_status"></div>
-        <div id="status"></div>
-    </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-    <script>
-        const socketPort = '{{ PORT }}';
-        const serverUrl = '{{ SERVER_URL }}';
-        const form = document.getElementById('appointmentForm');
-        const statusDiv = document.getElementById('status');
-        const timeOptionsDiv = document.getElementById('time_options');
-        const timeInput = document.getElementById('appointment_time_start');
-        const appointmentStatusDiv = document.getElementById('appointment_status');
-        const socket = io(serverUrl+':'+socketPort);
-        const clearStatusButton = document.getElementById('clearStatusButton');
 
-        // Socket.IO event listeners
-        socket.on('appointment_response', (result) => {
-            if (result.success) {
-                appointmentStatusDiv.innerHTML += `<p class="success">${result.message || '预约成功！'}</p>`;
-            } else {
-                appointmentStatusDiv.innerHTML += `<p class="error">错误：${result.error || result.message || '预约失败'}</p>`;
-            }
-        });
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js" integrity="sha512-cXLj7PigDGX26vRoKpueU8TikuwD5iXax0jcag50/Ar5z6Zsxi8JmdDgziUJnsaMjdamvZ8np1I/J380KjISaQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <script>
+            const socketPort = '{{ port }}';
+            const serverUrl = '{{ server_url }}';
+            const API_BASE = `${serverUrl}:${socketPort}`;
+            const API_PREFIX = `${API_BASE}/api`;
 
-        socket.on('appointment_update', (update) => {
-            if (update.message) {
-                appointmentStatusDiv.innerHTML += `<p>${update.message}</p>`;
-            } else if (update.error) {
-                appointmentStatusDiv.innerHTML += `<p class="error">${update.error}</p>`;
-            }
-        });
+            const authSection = document.getElementById('authSection');
+            const registerSection = document.getElementById('registerSection');
+            const appSection = document.getElementById('appSection');
+            const loginFeedback = document.getElementById('loginFeedback');
+            const registerFeedback = document.getElementById('registerFeedback');
+            const appointmentFeedback = document.getElementById('appointmentFeedback');
+            const userInfo = document.getElementById('userInfo');
+            const jobsBody = document.getElementById('jobsBody');
+            const logViewer = document.getElementById('logViewer');
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const appointmentForm = document.getElementById('appointmentForm');
+            const refreshJobsBtn = document.getElementById('refreshJobs');
+            const clearLogBtn = document.getElementById('clearLog');
+            const toggleRegisterBtn = document.getElementById('toggleRegister');
+            const backToLoginBtn = document.getElementById('backToLogin');
 
-        const generateTimeOptions = () => {
-            const times = [];
-            for (let hour = 8; hour < 22; hour++) {
-                times.push(`${hour}:00`);
+            let authToken = localStorage.getItem('reservationToken') || '';
+            let currentUser = null;
+            let socket = null;
+            let jobsCache = new Map();
+            let activeJobId = null;
+
+            const statusLabels = {
+                scheduled: '已排队',
+                running: '执行中',
+                completed: '成功',
+                failed: '失败',
+                cancelled: '已取消',
+            };
+
+            function badge(status) {
+                const label = statusLabels[status] || status;
+                return `<span class="badge ${status}">${label}</span>`;
             }
-            timeOptionsDiv.innerHTML = '';
-            times.forEach(time => {
-                const timeOption = document.createElement('div');
-                timeOption.classList.add('time-option');
-                timeOption.textContent = time;
-                timeOption.addEventListener('click', () => {
-                    document.querySelectorAll('.time-option.selected').forEach(selected => {
-                        selected.classList.remove('selected');
-                    });
-                    timeOption.classList.add('selected');
-                    timeInput.value = time;
+
+            function showSection(section) {
+                authSection.classList.toggle('hidden', section !== 'login');
+                registerSection.classList.toggle('hidden', section !== 'register');
+                appSection.classList.toggle('hidden', section !== 'app');
+            }
+
+            function setFeedback(element, message, isError = false) {
+                if (!element) return;
+                element.textContent = message || '';
+                element.style.color = isError ? '#d9534f' : '#28a745';
+            }
+
+            async function requestJson(path, options = {}) {
+                const headers = options.headers || {};
+                headers['Content-Type'] = 'application/json';
+                if (authToken) {
+                    headers['Authorization'] = `Bearer ${authToken}`;
+                }
+                const resp = await fetch(`${API_PREFIX}${path}`, { ...options, headers });
+                const data = await resp.json().catch(() => ({ error: '响应解析失败' }));
+                if (!resp.ok) {
+                    throw new Error(data.error || resp.statusText);
+                }
+                return data;
+            }
+
+            function connectSocket() {
+                if (socket) {
+                    socket.disconnect();
+                }
+                socket = io(API_BASE, { transports: ['websocket'] });
+                socket.on('connect', () => {
+                    socket.emit('authenticate', { token: authToken });
                 });
-                timeOptionsDiv.appendChild(timeOption);
-            });
-        };
-
-        generateTimeOptions();
-
-        form.addEventListener('submit', (event) => {
-            event.preventDefault();
-            appointmentStatusDiv.innerHTML = "";
-            const formData = new FormData(form);
-            const data = {};
-            formData.forEach((value, key) => {
-                data[key] = value;
-            });
-
-            if (!data.appointment_time_start) {
-                statusDiv.textContent = "请选择预约时间。";
-                return;
+                socket.on('auth_ok', (payload) => {
+                    console.log('socket auth ok', payload);
+                });
+                socket.on('auth_error', (payload) => {
+                    console.warn('socket auth error', payload);
+                });
+                socket.on('job_snapshot', (payload) => {
+                    if (payload && payload.jobs) {
+                        payload.jobs.forEach(storeJob);
+                        renderJobs();
+                    }
+                });
+                socket.on('job_status', (payload) => {
+                    if (!payload || !payload.jobId) return;
+                    const job = jobsCache.get(payload.jobId) || { id: payload.jobId, logs: [] };
+                    job.status = payload.status || job.status;
+                    if (payload.result !== undefined) {
+                        job.result = payload.result;
+                    }
+                    const cancelFlag = normalizeCancelFlag(
+                        payload.cancelRequested ?? payload.cancel_requested,
+                        job.cancel_requested
+                    );
+                    job.cancel_requested = cancelFlag;
+                    job.updated_at = new Date().toISOString();
+                    jobsCache.set(job.id, job);
+                    renderJobs();
+                    if (activeJobId === job.id) {
+                        renderLogs(job.id);
+                    }
+                });
+                socket.on('job_log', (payload) => {
+                    if (!payload || !payload.jobId || !payload.entry) return;
+                    const job = jobsCache.get(payload.jobId);
+                    if (!job) return;
+                    job.logs = job.logs || [];
+                    job.logs.push(payload.entry);
+                    if (job.logs.length > 200) {
+                        job.logs = job.logs.slice(-200);
+                    }
+                    if (activeJobId === job.id) {
+                        appendLogEntry(payload.entry);
+                    }
+                });
             }
 
-            appointmentStatusDiv.innerHTML = "正在提交...需要等待10s左右"
-            socket.emit('make_appointment', data);
-        });
+            function normalizeCancelFlag(source, fallback = false) {
+                if (source === undefined || source === null) return fallback;
+                if (typeof source === 'string') {
+                    const lower = source.trim().toLowerCase();
+                    if (['1', 'true', 'yes', 'y', 'on'].includes(lower)) return true;
+                    if (['0', 'false', 'no', 'n', 'off', ''].includes(lower)) return false;
+                }
+                return Boolean(source);
+            }
 
-        clearStatusButton.addEventListener('click', () => {
-            appointmentStatusDiv.innerHTML = '';
-        });
-    </script>
-</body>
-</html>
+            function storeJob(job) {
+                if (!job || !job.id) return;
+                const existing = jobsCache.get(job.id) || {};
+                const normalized = { ...existing, ...job, logs: job.logs || existing.logs || [] };
+                normalized.cancel_requested = normalizeCancelFlag(
+                    job.cancel_requested ?? job.cancelRequested,
+                    normalizeCancelFlag(existing.cancel_requested ?? existing.cancelRequested, false)
+                );
+                jobsCache.set(job.id, normalized);
+            }
+
+            function renderJobs() {
+                if (jobsCache.size === 0) {
+                    jobsBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">暂无任务</td></tr>';
+                    return;
+                }
+                
+const rows = Array.from(jobsCache.values())
+    .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+    .map(job => {
+        const runAt = job.run_at ? new Date(job.run_at).toLocaleString() : '-';
+        const day = job.payload?.appointment_day || '-';
+        const slot = job.payload?.appointment_time_start || '-';
+        const account = job.payload?.auth_account || job.payload?.account_id || job.user_id || '-';
+        const isCancelable = job.status === 'scheduled' && !job.cancel_requested;
+        const result = job.cancel_requested && job.status === 'running'
+            ? '取消中'
+            : (job.result || '');
+        return `
+            <tr data-job-id="${job.id}" class="job-row">
+                <td>${job.id.slice(0, 8)}</td>
+                <td>${day}</td>
+                <td>${slot}</td>
+                <td>${account}</td>
+                <td>${runAt}</td>
+                <td>${badge(job.status)}</td>
+                <td>${result}</td>
+                <td>
+                    <button type="button" data-action="select" data-id="${job.id}">查看</button>
+                    <button type="button" data-action="cancel" data-id="${job.id}" class="danger" ${isCancelable ? '' : 'disabled'}>取消</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+jobsBody.innerHTML = rows;
+
+            }
+
+            function appendLogEntry(entry) {
+                if (!entry) return;
+                const line = `[${entry.timestamp}] ${entry.message}`;
+                logViewer.textContent += `
+${line}`;
+                logViewer.scrollTop = logViewer.scrollHeight;
+            }
+
+            function renderLogs(jobId) {
+                const job = jobsCache.get(jobId);
+                logViewer.textContent = '';
+                if (!job) {
+                    logViewer.textContent = '未找到任务信息';
+                    return;
+                }
+                activeJobId = jobId;
+                if (!job.logs || job.logs.length === 0) {
+                    logViewer.textContent = '暂无日志';
+                    return;
+                }
+                job.logs.forEach(appendLogEntry);
+            }
+
+            function setUserInfo(user) {
+                userInfo.innerHTML = `
+                    <div>当前用户：<strong>${user.name} (${user.userId})</strong></div>
+                    <button id="logoutBtn" type="button" class="secondary">退出登录</button>
+                `;
+                const nameInput = document.getElementById('you_name');
+                if (nameInput && !nameInput.value) {
+                    nameInput.value = user.name || '';
+                }
+                const accountInput = document.getElementById('auth_account');
+                if (accountInput && !accountInput.value) {
+                    accountInput.value = user.userId || '';
+                }
+                const logoutBtn = document.getElementById('logoutBtn');
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', async () => {
+                        try {
+                            await requestJson('/logout', { method: 'POST', body: JSON.stringify({}) });
+                        } catch (err) {
+                            console.warn(err);
+                        }
+                        authToken = '';
+                        localStorage.removeItem('reservationToken');
+                        jobsCache.clear();
+                        renderJobs();
+                        showSection('login');
+                        if (socket) socket.disconnect();
+                    });
+                }
+            }
+
+            async function fetchJobs() {
+                try {
+                    const data = await requestJson('/appointments');
+                    (data.jobs || []).forEach(storeJob);
+                    renderJobs();
+                    if (activeJobId) {
+                        renderLogs(activeJobId);
+                    }
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+
+            function generateTimeOptions() {
+                const timeOptionsDiv = document.getElementById('time_options');
+                const timeInput = document.getElementById('appointment_time_start');
+                const hours = [];
+                for (let hour = 8; hour < 22; hour++) {
+                    hours.push(`${hour.toString().padStart(2, '0')}:00`);
+                }
+                timeOptionsDiv.innerHTML = '';
+                hours.forEach(time => {
+                    const div = document.createElement('div');
+                    div.classList.add('time-option');
+                    div.textContent = time;
+                    div.addEventListener('click', () => {
+                        document.querySelectorAll('.time-option.selected').forEach(el => el.classList.remove('selected'));
+                        div.classList.add('selected');
+                        timeInput.value = time;
+                    });
+                    timeOptionsDiv.appendChild(div);
+                });
+            }
+
+            function setDefaultDate() {
+                const dateInput = document.getElementById('appointment_day');
+                if (!dateInput || dateInput.value) return;
+                const today = new Date();
+                const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+                dateInput.value = tomorrow.toISOString().slice(0, 10);
+            }
+
+            loginForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                setFeedback(loginFeedback, '正在登录...', false);
+                const formData = new FormData(loginForm);
+                const payload = Object.fromEntries(formData.entries());
+                try {
+                    const data = await requestJson('/login', { method: 'POST', body: JSON.stringify(payload) });
+                    authToken = data.token;
+                    currentUser = data.user;
+                    localStorage.setItem('reservationToken', authToken);
+                    setFeedback(loginFeedback, '登录成功');
+                    showSection('app');
+                    setUserInfo(currentUser);
+                    generateTimeOptions();
+                    setDefaultDate();
+                    await fetchJobs();
+                    connectSocket();
+                } catch (err) {
+                    setFeedback(loginFeedback, err.message, true);
+                }
+            });
+
+            registerForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                setFeedback(registerFeedback, '正在注册...', false);
+                const formData = new FormData(registerForm);
+                const payload = Object.fromEntries(formData.entries());
+                try {
+                    await requestJson('/register', { method: 'POST', body: JSON.stringify(payload) });
+                    setFeedback(registerFeedback, '注册成功，请返回登录');
+                } catch (err) {
+                    setFeedback(registerFeedback, err.message, true);
+                }
+            });
+
+            appointmentForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                setFeedback(appointmentFeedback, '正在提交预约任务...', false);
+                const formData = new FormData(appointmentForm);
+                const payload = Object.fromEntries(formData.entries());
+                try {
+                    const response = await requestJson('/appointments', { method: 'POST', body: JSON.stringify(payload) });
+                    const job = response.job;
+                    storeJob(job);
+                    renderJobs();
+                    setFeedback(appointmentFeedback, '任务创建成功');
+                } catch (err) {
+                    setFeedback(appointmentFeedback, err.message, true);
+                }
+            });
+
+            refreshJobsBtn.addEventListener('click', fetchJobs);
+            clearLogBtn.addEventListener('click', () => {
+                logViewer.textContent = '';
+                if (activeJobId) {
+                    renderLogs(activeJobId);
+                }
+            });
+
+            toggleRegisterBtn.addEventListener('click', () => showSection('register'));
+            backToLoginBtn.addEventListener('click', () => showSection('login'));
+
+            jobsBody.addEventListener('click', async (event) => {
+                const target = event.target;
+                if (!(target instanceof HTMLElement)) return;
+                const action = target.dataset.action;
+                const jobId = target.dataset.id;
+                if (!jobId) return;
+                if (action === 'select') {
+                    renderLogs(jobId);
+                } else if (action === 'cancel') {
+                    try {
+                        await requestJson(`/appointments/${jobId}/cancel`, { method: 'POST', body: JSON.stringify({}) });
+                        setFeedback(appointmentFeedback, '任务已取消');
+                        await fetchJobs();
+                    } catch (err) {
+                        setFeedback(appointmentFeedback, err.message, true);
+                    }
+                }
+            });
+
+            // 初始化
+            generateTimeOptions();
+            setDefaultDate();
+            if (authToken) {
+                requestJson('/me')
+                    .then((data) => {
+                        currentUser = data.user;
+                        setUserInfo(currentUser);
+                        showSection('app');
+                        fetchJobs();
+                        connectSocket();
+                    })
+                    .catch(() => {
+                        localStorage.removeItem('reservationToken');
+                        authToken = '';
+                        showSection('login');
+                    });
+            } else {
+                showSection('login');
+            }
+        </script>
+    </body>
+    </html>
