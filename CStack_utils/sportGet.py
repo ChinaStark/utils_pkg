@@ -126,7 +126,7 @@ def request_url(cfg, url, params_, headers_):
     except Exception as e:
         return False, 'Bug in request_url:' + str(e)
     return True, ret
-def main(cfg, emit=None, cancel_callback=None):
+def main(cfg, emit=None, cancel_callback=None, cnt = 1):
     def should_cancel():
         return cancel_callback and cancel_callback()
 
@@ -242,13 +242,24 @@ def main(cfg, emit=None, cancel_callback=None):
                         return False, '用户取消'
                     _, ret = request_url(cfg, insertUrl, param_item, cfg.headers)
                     if ret.get('msg') == '成功':
-                        return True, 'success'
-                    if emit:
-                        emit('appointment_update', {
-                            'message': f"日期:{param_item['YYKS']}\n场馆:{param_item['CGDM']}预约失败!!!\n 开始下一场预约..."
-                        })
-                    if debug:
-                        print(f"日期:{param_item['YYKS']}\n场馆:{param_item['CGDM']}预约失败!!!\n 开始下一场预约...")
+                        if cnt == 1:
+                            return True, 'success'
+                        else:
+                            cnt -= 1
+                        if emit:
+                            emit('appointment_update', {
+                                'message': f"日期:{param_item['YYKS']}\n场馆:{param_item['CGDM']}预约成功!!!\n 开始下一场预约..."
+                            })
+                        if debug:
+                            print(f"日期:{param_item['YYKS']}\n场馆:{param_item['CGDM']}预约成功!!!\n 开始下一场预约...")
+                        break
+                    else:
+                        if emit:
+                            emit('appointment_update', {
+                                'message': f"日期:{param_item['YYKS']}\n场馆:{param_item['CGDM']}预约失败!!!\n 开始下一场预约..."
+                            })
+                        if debug:
+                            print(f"日期:{param_item['YYKS']}\n场馆:{param_item['CGDM']}预约失败!!!\n 开始下一场预约...")
         return False, '可能是你选择的时间段没了'
     else:
         if debug:
@@ -256,7 +267,7 @@ def main(cfg, emit=None, cancel_callback=None):
         return False, '网慢了，已经无！要不就是还没开！'
 def strat_appointment(day, start_time, stu_name, stu_id, cookie_file_path, sport_type="001", yylx=1.0,
                       target_time_str="12:30", emit=None, password=None, wait_until_target=False,
-                      max_attempts=3, retry_delay=1, window_lead_minutes=2, cancel_callback=None):
+                      max_attempts=3, retry_delay=1, window_lead_minutes=2, cancel_callback=None, cnt = 1):
     def notify(msg: str):
         if emit:
             emit('appointment_update', {'message': msg})
@@ -327,7 +338,7 @@ def strat_appointment(day, start_time, stu_name, stu_id, cookie_file_path, sport
         if should_cancel():
             return cancel_result()
         attempts += 1
-        success, msg_main = main(cfg, emit=emit, cancel_callback=should_cancel)
+        success, msg_main = main(cfg, emit=emit, cancel_callback=should_cancel, cnt = cnt)
         if success:
             notify('预约成功，速速付款!')
             return True, 'success'
