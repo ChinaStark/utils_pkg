@@ -38,7 +38,15 @@ appointment_day = "2025-05-14"
 appointment_time_start = "21:00" # 意愿开始时间
 cookie_file="./cookies"
 cnt = 1 # 默认是约一场，你可以改，注意一个时间段只能约一场
-sportGet.strat_appointment(appointment_day, appointment_time_start,you_name, you_id, cookie_file,sport_type=typeOfSport,yylx=YYLX,cnt=cnt)
+sportGet.strat_appointment(appointment_day,
+                           appointment_time_start,
+                           you_name,
+                           you_id,
+                           cookie_file,
+                           sport_type=typeOfSport,
+                           wait_until_target=True, # 提前3分钟约
+                           yylx=YYLX,
+                           cnt = cnt)
 ```
 
 
