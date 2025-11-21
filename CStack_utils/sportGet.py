@@ -4,7 +4,7 @@
 # @Time : 2025/3/22 20:19
 import re
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import requests
 import json
 
@@ -267,7 +267,7 @@ def main(cfg, emit=None, cancel_callback=None, cnt = 1):
         return False, '网慢了，已经无！要不就是还没开！'
 def strat_appointment(day, start_time, stu_name, stu_id, cookie_file_path, sport_type="001", yylx=1.0,
                       target_time_str="12:30", emit=None, password=None, wait_until_target=False,
-                      max_attempts=3, retry_delay=1, window_lead_minutes=2, cancel_callback=None, cnt = 1):
+                      max_attempts=5, retry_delay=1, window_lead_minutes=2, cancel_callback=None, cnt = 1):
     def notify(msg: str):
         if emit:
             emit('appointment_update', {'message': msg})
@@ -312,7 +312,7 @@ def strat_appointment(day, start_time, stu_name, stu_id, cookie_file_path, sport
     if target_time_str:
         try:
             target_dt = datetime.strptime(cfg.target_time_str, '%H:%M').time()
-            target_time = datetime.combine(appointment_date, target_dt)
+            target_time = datetime.combine(date.today(), target_dt)
         except ValueError:
             notify(f'目标时间格式错误: {cfg.target_time_str}')
             return False, 'invalid target time'
