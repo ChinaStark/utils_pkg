@@ -146,7 +146,16 @@ def main(cfg, emit=None, cancel_callback=None, cnt = 1):
     if should_cancel():
         return False, '用户取消'
 
-    flag_times_list, times_list = request_url(cfg, getTimeList, cfg.params_getTimeList, cfg.headers)
+    def load_times_list(path):
+        with open(path, 'r', encoding='utf-8') as f:
+            data = f.read()
+        return True, json.loads(data)
+
+    # 这一步是每个场馆都是固定的wid，因此我们记录羽毛球的放在json文件里面，直接加载json数据减少一次请求时间
+    if cfg.typeOfSport == "001" :
+        flag_times_list, times_list = load_times_list("../static/time_list.json")
+    else:
+        flag_times_list, times_list = request_url(cfg, getTimeList, cfg.params_getTimeList, cfg.headers)
     if flag_times_list:
         if emit:
             emit('appointment_update', {'message': 'cookies 校验成功'})
@@ -220,8 +229,9 @@ def main(cfg, emit=None, cancel_callback=None, cnt = 1):
                 print('=' * 30)
             if should_cancel():
                 return False, '用户取消'
+            pre_param = []
             if len(available_room) > 0:
-                pre_param = []
+
                 for available_item in available_room:
                     if should_cancel():
                         return False, '用户取消'
@@ -233,9 +243,6 @@ def main(cfg, emit=None, cancel_callback=None, cnt = 1):
                     params_insert_['YYJS'] = available_item['YYJS']
                     params_insert_['XQWID'] = available_item['XQWID']
                     pre_param.append(params_insert_)
-            if debug:
-                print('pre_param', pre_param)
-                print('=' * 30)
             if len(pre_param) > 0:
                 for param_item in pre_param:
                     if should_cancel():
@@ -267,7 +274,7 @@ def main(cfg, emit=None, cancel_callback=None, cnt = 1):
         return False, '网慢了，已经无！要不就是还没开！'
 def strat_appointment(day, start_time, stu_name, stu_id, cookie_file_path, sport_type="001", yylx=1.0,
                       target_time_str="12:30", emit=None, password=None, wait_until_target=False,
-                      max_attempts=5, retry_delay=1, window_lead_minutes=2, cancel_callback=None, cnt = 1):
+                      max_attempts=5, retry_delay=0.05, window_lead_minutes=2, cancel_callback=None, cnt = 1):
     def notify(msg: str):
         if emit:
             emit('appointment_update', {'message': msg})
@@ -328,7 +335,7 @@ def strat_appointment(day, start_time, stu_name, stu_id, cookie_file_path, sport
             wait_seconds = (earliest_attempt - now).total_seconds()
             if wait_seconds <= 0:
                 break
-            sleep_seconds = max(1, min(30, wait_seconds))
+            sleep_seconds = max(0.5, min(30, wait_seconds))
             notify(f'未到预约开放时间，{int(sleep_seconds)} 秒后再尝试...')
             time.sleep(sleep_seconds)
 
