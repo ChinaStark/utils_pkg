@@ -28,6 +28,9 @@ Copy the `path/to/cookies` to the variant `cookie_file`
 > [!NOTE]
 > Before you run, please write the cookies in you file and the path should give to the variant cookie_file.
 
+
+### Code struct
+![](static/QQ20251122-115952.png)
 ```python
 from CStack_utils import *
 you_name = "xxx"

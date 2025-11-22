@@ -12,6 +12,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         'requests',
+        'selenium'
     ],
     python_requires='>=3.9',
     description='A small tool library from CStark',

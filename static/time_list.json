@@ -1,0 +1,114 @@
+[
+    {
+        "WID": "04B0B883C0D0AB9FE063E7421FACC253",
+        "CODE": "08:00-09:00",
+        "NAME": "08:00-09:00",
+        "STATE_EXPLAIN": "OTHER_OCCUPY",
+        "disabled": false,
+        "text": "已满员"
+    },
+    {
+        "WID": "04B0B883C0D1AB9FE063E7421FACC253",
+        "CODE": "09:00-10:00",
+        "NAME": "09:00-10:00",
+        "STATE_EXPLAIN": "OTHER_OCCUPY",
+        "disabled": false,
+        "text": "已满员"
+    },
+    {
+        "WID": "04B0B883C0D2AB9FE063E7421FACC253",
+        "CODE": "10:00-11:00",
+        "NAME": "10:00-11:00",
+        "STATE_EXPLAIN": "OTHER_OCCUPY",
+        "disabled": false,
+        "text": "已满员"
+    },
+    {
+        "WID": "04B0B883C0D3AB9FE063E7421FACC253",
+        "CODE": "11:00-12:00",
+        "NAME": "11:00-12:00",
+        "STATE_EXPLAIN": "OTHER_OCCUPY",
+        "disabled": false,
+        "text": "已满员"
+    },
+    {
+        "WID": "04B0B883C0D4AB9FE063E7421FACC253",
+        "CODE": "12:00-13:00",
+        "NAME": "12:00-13:00",
+        "STATE_EXPLAIN": "OTHER_OCCUPY",
+        "disabled": false,
+        "text": "已满员"
+    },
+    {
+        "WID": "04B0B883C0D5AB9FE063E7421FACC253",
+        "CODE": "13:00-14:00",
+        "NAME": "13:00-14:00",
+        "STATE_EXPLAIN": "OTHER_OCCUPY",
+        "disabled": false,
+        "text": "已满员"
+    },
+    {
+        "WID": "04B0B883C0D6AB9FE063E7421FACC253",
+        "CODE": "14:00-15:00",
+        "NAME": "14:00-15:00",
+        "STATE_EXPLAIN": "OTHER_OCCUPY",
+        "disabled": false,
+        "text": "已满员"
+    },
+    {
+        "WID": "04B0B883C0D7AB9FE063E7421FACC253",
+        "CODE": "15:00-16:00",
+        "NAME": "15:00-16:00",
+        "STATE_EXPLAIN": "OTHER_OCCUPY",
+        "disabled": false,
+        "text": "已满员"
+    },
+    {
+        "WID": "04B0B883C0D8AB9FE063E7421FACC253",
+        "CODE": "16:00-17:00",
+        "NAME": "16:00-17:00",
+        "STATE_EXPLAIN": "OTHER_OCCUPY",
+        "disabled": false,
+        "text": "已满员"
+    },
+    {
+        "WID": "04B0B883C0D9AB9FE063E7421FACC253",
+        "CODE": "17:00-18:00",
+        "NAME": "17:00-18:00",
+        "STATE_EXPLAIN": "OTHER_OCCUPY",
+        "disabled": false,
+        "text": "已满员"
+    },
+    {
+        "WID": "04B0B883C0DAAB9FE063E7421FACC253",
+        "CODE": "18:00-19:00",
+        "NAME": "18:00-19:00",
+        "STATE_EXPLAIN": "OTHER_OCCUPY",
+        "disabled": false,
+        "text": "已满员"
+    },
+    {
+        "WID": "04B0B883C0DBAB9FE063E7421FACC253",
+        "CODE": "19:00-20:00",
+        "NAME": "19:00-20:00",
+        "STATE_EXPLAIN": "OTHER_OCCUPY",
+        "disabled": false,
+        "text": "已满员"
+    },
+    {
+        "WID": "04B0B883C0DCAB9FE063E7421FACC253",
+        "CODE": "20:00-21:00",
+        "NAME": "20:00-21:00",
+        "STATE_EXPLAIN": "OTHER_OCCUPY",
+        "disabled": false,
+        "text": "已满员"
+    },
+    {
+        "WID": "04B0B883C0DDAB9FE063E7421FACC253",
+        "CODE": "21:00-22:00",
+        "NAME": "21:00-22:00",
+        "STATE_EXPLAIN": "OTHER_OCCUPY",
+        "disabled": false,
+        "text": "已满员"
+    }
+]
