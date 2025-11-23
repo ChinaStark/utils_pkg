@@ -346,28 +346,13 @@ def strat_appointment(day, start_time, stu_name, stu_id, cookie_file_path, sport
         except ValueError:
             notify(f'目标时间格式错误: {cfg.target_time_str}')
             return False, 'invalid target time'
+    def countdown(remaining):
+        hours, remainder = divmod(remaining.seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        countdown_msg = f'距离预约开放时间还剩: {hours:02d}:{minutes:02d}:{seconds:02d}'
+        notify(countdown_msg)
 
     if wait_until_target and target_time:
-        # earliest_attempt = target_time - timedelta(minutes=window_lead_minutes)
-        # while True:
-        #     if should_cancel():
-        #         return cancel_result()
-        #     now = datetime.now()
-        #     if now >= earliest_attempt:
-        #         break
-        #     wait_seconds = (earliest_attempt - now).total_seconds()
-        #     if wait_seconds <= 0:
-        #         break
-        #     sleep_seconds = max(0.5, min(30, wait_seconds))
-        #     notify(f'未到预约开放时间，{int(sleep_seconds)} 秒后再尝试...')
-        #     time.sleep(sleep_seconds)
-        # 等待直到精确的目标时间0
-        def countdown(remaining):
-            hours, remainder = divmod(remaining.seconds, 3600)
-            minutes, seconds = divmod(remainder, 60)
-            countdown_msg = f'距离预约开放时间还剩: {hours:02d}:{minutes:02d}:{seconds:02d}'
-            notify(countdown_msg)
-
         while True:
             if should_cancel():
                 return cancel_result()
@@ -382,7 +367,7 @@ def strat_appointment(day, start_time, stu_name, stu_id, cookie_file_path, sport
                 _, _ = request_url(cfg, getTimeList, cfg.params_getTimeList, cfg.headers)
                 countdown(remaining)
                 time.sleep(1000)
-            elif timedelta(minutes=5) >= remaining >= timedelta(minutes=0.5):
+            elif timedelta(minutes=20) >= remaining >= timedelta(minutes=0.5):
                 countdown(remaining)
                 time.sleep(26)
             else:
