@@ -7,6 +7,7 @@ import time
 from datetime import datetime, timedelta, date
 import requests
 import json
+import random
 
 from CStack_utils import getCookiesForSport
 
@@ -152,8 +153,8 @@ def main(cfg, emit=None, cancel_callback=None, cnt = 1):
         return True, json.loads(data)
 
     # 这一步是每个场馆都是固定的wid，因此我们记录羽毛球的放在json文件里面，直接加载json数据减少一次请求时间
-    if cfg.typeOfSport == "001" :
-        flag_times_list, times_list = load_times_list("../static/time_list.json")
+    if cfg.typeOfSport == "001":
+        flag_times_list, times_list = load_times_list("static/time_list.json")
     else:
         flag_times_list, times_list = request_url(cfg, getTimeList, cfg.params_getTimeList, cfg.headers)
     if flag_times_list:
@@ -191,8 +192,19 @@ def main(cfg, emit=None, cancel_callback=None, cnt = 1):
     if should_cancel():
         return False, '用户取消'
 
+    global_CDWID = -1
+
+    def move_dict_to_front(list, target):
+        """将特定字典移动到列表首位"""
+        if target in list:
+            list.remove(target)
+            list.insert(0, target)
+            return True
+        return False
+
     if len(available_times) > 0:
         for item in available_times:
+
             if should_cancel():
                 return False, '用户取消'
             if item['code_start'] < cfg.appointment_time_start:
@@ -212,24 +224,27 @@ def main(cfg, emit=None, cancel_callback=None, cnt = 1):
             for item_room in room_info['datas']['getOpeningRoom']['rows']:
                 if should_cancel():
                     return False, '用户取消'
-                if not item_room['disabled']:
-                    yyrq = '-'.join([item['code_start'], item['code_end']])
-                    yyks = ' '.join([cfg.appointment_day, item['code_start']])
-                    yyjs = ' '.join([cfg.appointment_day, item['code_end']])
-                    available_room.append({
-                        'CGDM': item_room['CGBM'],
-                        'CDWID': item_room['WID'],
-                        'XQWID': item_room['XQDM'],
-                        'KYYSJD': yyrq,
-                        'YYKS': yyks,
-                        'YYJS': yyjs,
-                    })
+                if item_room['disabled']:
+                    continue
+                yyrq = '-'.join([item['code_start'], item['code_end']])
+                yyks = ' '.join([cfg.appointment_day, item['code_start']])
+                yyjs = ' '.join([cfg.appointment_day, item['code_end']])
+                available_item = {
+                    'CGDM': item_room['CGBM'],
+                    'CDWID': item_room['WID'],
+                    'XQWID': item_room['XQDM'],
+                    'KYYSJD': yyrq,
+                    'YYKS': yyks,
+                    'YYJS': yyjs,
+                }
+                available_room.append(available_item)
             if debug:
                 print('available_room', available_room)
                 print('=' * 30)
             if should_cancel():
                 return False, '用户取消'
             pre_param = []
+            target_param = None
             if len(available_room) > 0:
 
                 for available_item in available_room:
@@ -243,16 +258,23 @@ def main(cfg, emit=None, cancel_callback=None, cnt = 1):
                     params_insert_['YYJS'] = available_item['YYJS']
                     params_insert_['XQWID'] = available_item['XQWID']
                     pre_param.append(params_insert_)
+                    if available_item['CDWID'] == global_CDWID:
+                        target_param = params_insert_
+
             if len(pre_param) > 0:
+                random.shuffle(pre_param)
+                if target_param is not None:
+                    move_dict_to_front(pre_param, target_param)
                 for param_item in pre_param:
                     if should_cancel():
                         return False, '用户取消'
-                    _, ret = request_url(cfg, insertUrl, param_item, cfg.headers)
-                    if ret.get('msg') == '成功':
+                    flag, ret = request_url(cfg, insertUrl, param_item, cfg.headers)
+                    if flag:
                         if cnt == 1:
                             return True, 'success'
                         else:
                             cnt -= 1
+                        global_CDWID = param_item['CDWID']
                         if emit:
                             emit('appointment_update', {
                                 'message': f"日期:{param_item['YYKS']}\n场馆:{param_item['CGDM']}预约成功!!!\n 开始下一场预约..."
@@ -261,6 +283,7 @@ def main(cfg, emit=None, cancel_callback=None, cnt = 1):
                             print(f"日期:{param_item['YYKS']}\n场馆:{param_item['CGDM']}预约成功!!!\n 开始下一场预约...")
                         break
                     else:
+                        global_CDWID = -1
                         if emit:
                             emit('appointment_update', {
                                 'message': f"日期:{param_item['YYKS']}\n场馆:{param_item['CGDM']}预约失败!!!\n 开始下一场预约..."
@@ -274,7 +297,7 @@ def main(cfg, emit=None, cancel_callback=None, cnt = 1):
         return False, '网慢了，已经无！要不就是还没开！'
 def strat_appointment(day, start_time, stu_name, stu_id, cookie_file_path, sport_type="001", yylx=1.0,
                       target_time_str="12:30", emit=None, password=None, wait_until_target=False,
-                      max_attempts=5, retry_delay=0.05, window_lead_minutes=2, cancel_callback=None, cnt = 1):
+                      max_attempts=120, retry_delay=1, cancel_callback=None, cnt = 1):
     def notify(msg: str):
         if emit:
             emit('appointment_update', {'message': msg})
@@ -323,21 +346,32 @@ def strat_appointment(day, start_time, stu_name, stu_id, cookie_file_path, sport
         except ValueError:
             notify(f'目标时间格式错误: {cfg.target_time_str}')
             return False, 'invalid target time'
+    def countdown(remaining):
+        hours, remainder = divmod(remaining.seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        countdown_msg = f'距离预约开放时间还剩: {hours:02d}:{minutes:02d}:{seconds:02d}'
+        notify(countdown_msg)
 
     if wait_until_target and target_time:
-        earliest_attempt = target_time - timedelta(minutes=window_lead_minutes)
         while True:
             if should_cancel():
                 return cancel_result()
             now = datetime.now()
-            if now >= earliest_attempt:
+            if now >= target_time:
                 break
-            wait_seconds = (earliest_attempt - now).total_seconds()
-            if wait_seconds <= 0:
-                break
-            sleep_seconds = max(0.5, min(30, wait_seconds))
-            notify(f'未到预约开放时间，{int(sleep_seconds)} 秒后再尝试...')
-            time.sleep(sleep_seconds)
+            # 计算剩余时间并显示倒计时
+            remaining = target_time - now
+            if remaining >= timedelta(minutes=20):
+                # 刷新cookies
+                cfg.headers['Cookie'] = load_cookies(cfg.cookie_file)
+                _, _ = request_url(cfg, getTimeList, cfg.params_getTimeList, cfg.headers)
+                countdown(remaining)
+                time.sleep(1000)
+            elif timedelta(minutes=20) >= remaining >= timedelta(minutes=0.5):
+                countdown(remaining)
+                time.sleep(26)
+            else:
+                time.sleep(0.2)
 
     attempts = 0
     last_error = ''
