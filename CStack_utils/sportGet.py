@@ -88,13 +88,13 @@ def init(**args):
 
 def load_cookies(file_path):
     with open(file_path, 'r') as file:
-        cookie_str = file.read()
+        cookie_str = file.read().strip()
     return cookie_str
 
 def set_cookies(file_path, cookie_str):
     new_weu_match = re.search(r"_WEU=([^;]+)", cookie_str)
     if not new_weu_match:
-        raise ValueError("cookie_str 中找不到 _WEU 字段")
+        raise ValueError("当前cookie已失效，请重新获取cookie并更新cookies文件")
 
     new_weu = new_weu_match.group(1)
 
@@ -110,22 +110,21 @@ def set_cookies(file_path, cookie_str):
 
     with open(file_path, 'w', encoding="utf-8") as f:
         f.write(new_content)
+
 def request_url(cfg, url, params_, headers_):
-    try:
-        response = requests.post(url, data=params_, headers=headers_)
-        cookie_header = response.headers.get('Set-Cookie')
+
+    response = requests.post(url, data=params_, headers=headers_)
+    cookie_header = response.headers.get('Set-Cookie')
+    if cookie_header:
+        set_cookies(cfg.cookie_file, cookie_header)
+    else:
+        raise ValueError("request_url: no Set-Cookie header in response, please update your cookie")
+    if debug:
+        print(params_)
         if cookie_header:
-            set_cookies(cfg.cookie_file, cookie_header)
-        elif debug:
-            print('request_url: no Set-Cookie header in response')
-        if debug:
-            print(params_)
-            if cookie_header:
-                print(cookie_header)
-        response_json = response.json()
-        ret = response_json
-    except Exception as e:
-        return False, 'Bug in request_url:' + str(e)
+            print(cookie_header)
+    response_json = response.json()
+    ret = response_json
     return True, ret
 def main(cfg, emit=None, cancel_callback=None, cnt = 1):
     def should_cancel():
@@ -157,17 +156,6 @@ def main(cfg, emit=None, cancel_callback=None, cnt = 1):
         flag_times_list, times_list = load_times_list("static/time_list.json")
     else:
         flag_times_list, times_list = request_url(cfg, getTimeList, cfg.params_getTimeList, cfg.headers)
-    if flag_times_list:
-        if emit:
-            emit('appointment_update', {'message': 'cookies 校验成功'})
-        elif debug:
-            print('cookies 校验成功')
-    else:
-        if emit:
-            emit('appointment_update', {'message': 'Cookies 失效，重新登录...'})
-        if debug:
-            print('Cookies 失效，重新登录...')
-        return False, 'need cookies'
 
     if debug:
         print('times_list', times_list)
@@ -295,9 +283,10 @@ def main(cfg, emit=None, cancel_callback=None, cnt = 1):
         if debug:
             print('网慢了，已经无！要不就是还没开！')
         return False, '网慢了，已经无！要不就是还没开！'
+
 def strat_appointment(day, start_time, stu_name, stu_id, cookie_file_path, sport_type="001", yylx=1.0,
                       target_time_str="12:30", emit=None, password=None, wait_until_target=False,
-                      max_attempts=120, retry_delay=1, cancel_callback=None, cnt = 1):
+                      max_attempts=60, retry_delay=0.5, cancel_callback=None, cnt = 1):
     def notify(msg: str):
         if emit:
             emit('appointment_update', {'message': msg})
@@ -352,6 +341,10 @@ def strat_appointment(day, start_time, stu_name, stu_id, cookie_file_path, sport
         countdown_msg = f'距离预约开放时间还剩: {hours:02d}:{minutes:02d}:{seconds:02d}'
         notify(countdown_msg)
 
+    # 检查当前cookie是否有效
+    cfg.headers['Cookie'] = load_cookies(cfg.cookie_file)
+    _, _ = request_url(cfg, getTimeList, cfg.params_getTimeList, cfg.headers)
+
     if wait_until_target and target_time:
         while True:
             if should_cancel():
@@ -362,11 +355,11 @@ def strat_appointment(day, start_time, stu_name, stu_id, cookie_file_path, sport
             # 计算剩余时间并显示倒计时
             remaining = target_time - now
             if remaining >= timedelta(minutes=20):
+                countdown(remaining)
+                time.sleep(1000)
                 # 刷新cookies
                 cfg.headers['Cookie'] = load_cookies(cfg.cookie_file)
                 _, _ = request_url(cfg, getTimeList, cfg.params_getTimeList, cfg.headers)
-                countdown(remaining)
-                time.sleep(1000)
             elif timedelta(minutes=20) >= remaining >= timedelta(minutes=0.5):
                 countdown(remaining)
                 time.sleep(26)
