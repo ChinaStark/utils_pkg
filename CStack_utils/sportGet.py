@@ -111,6 +111,8 @@ def set_cookies(file_path, cookie_str):
     with open(file_path, 'w', encoding="utf-8") as f:
         f.write(new_content)
 
+
+
 def request_url(cfg, url, params_, headers_):
 
     response = requests.post(url, data=params_, headers=headers_)
@@ -123,9 +125,13 @@ def request_url(cfg, url, params_, headers_):
         print(params_)
         if cookie_header:
             print(cookie_header)
-    response_json = response.json()
-    ret = response_json
+    try:
+        response_json = response.json()
+        ret = response_json
+    except Exception as e:
+        return False, 'Appointment not yet open, please wait...'
     return True, ret
+
 def main(cfg, emit=None, cancel_callback=None, cnt = 1):
     def should_cancel():
         return cancel_callback and cancel_callback()
@@ -286,7 +292,7 @@ def main(cfg, emit=None, cancel_callback=None, cnt = 1):
 
 def strat_appointment(day, start_time, stu_name, stu_id, cookie_file_path, sport_type="001", yylx=1.0,
                       target_time_str="12:30", emit=None, password=None, wait_until_target=False,
-                      max_attempts=60, retry_delay=0.5, cancel_callback=None, cnt = 1):
+                      max_attempts=30, retry_delay=0.5, cancel_callback=None, cnt = 1):
     def notify(msg: str):
         if emit:
             emit('appointment_update', {'message': msg})
