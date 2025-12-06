@@ -17,39 +17,49 @@ cd utils_pkg
 pip install .
 ```
 
-## Get and write cookies 
-### step 1
-![](static/cut.png)
-### step 2
-![](static/QQ20250414-144632.png)
-### step 3
-Copy the `path/to/cookies` to the variant `cookie_file`
-## Run
-> [!NOTE]
-> Before you run, please write the cookies in you file and the path should give to the variant cookie_file.
-
-
+## Usage
+### step 1 
+Follow the code structure to create files cookies and main.py
 ### Code struct
-![](static/QQ20251122-115952.png)
+![](static/code_structure.png)
+
+### step 2
+Get and write cookies into cookies file.
+![](static/cut.png)
+
+### step 3
+Copy the code below into main.py and configurate the parameters.
 ```python
 from CStack_utils import *
-you_name = "xxx"
-you_id = "xxx"
-YYLX="2.0"  # 预约类型，目前羽毛球是1.0，健身房和排球是2.0
-typeOfSport = "007" # 预约什么运动 001 羽毛球  003 排球
-appointment_day = "2025-05-14"
-appointment_time_start = "21:00" # 意愿开始时间
-cookie_file="./cookies"
-cnt = 1 # 默认是约一场，你可以改，注意一个时间段只能约一场
+
+you_name = ""  # 姓名
+you_id = ""  # 学号
+YYLX = "1.0"  # 预约类型，目前羽毛球、排球、网球、壁球、乒乓球是1.0，健身房、足球、篮球是2.0
+typeOfSport = "001"  # 001羽毛球  002足球  003排球  004网球  005篮球  006壁球  007一楼重量型健身  008二楼有氧型健身  013乒乓球
+appointment_day = "2025-12-07"  # 预约日期
+appointment_time_start = "08:00"  # 预约开始时间，格式：hh:mm， 示例："08:00"
+cookie_file = "./cookies"   # 间隔超过30分钟，记得更新一下cookies
+cnt = 1  # 预约场次数目，优先同场次连续时间段，其次随机场次连续时间段，你可以改，注意一个时间段只能约一场，单人最多约两场
+
+# 预约羽毛球特定场地专用字段
+campus = "1"   # 指定校区， "1"=粤海  "2"=丽湖
+# 指定羽毛球场地，不指定则随机
+# 粤海：A3-A8，B3-B8，C3-C8，D3-D8，示例："A3"；
+# 丽湖：至畅羽毛球1-10号场，至快羽毛球1-12号场，示例："至畅羽毛球1号场"
+target_room = ""
+
 sportGet.strat_appointment(appointment_day,
                            appointment_time_start,
                            you_name,
                            you_id,
                            cookie_file,
                            sport_type=typeOfSport,
-                           wait_until_target=True, # 提前3分钟约
+                           wait_until_target=True,
                            yylx=YYLX,
-                           cnt = cnt)
+                           cnt=cnt,
+                           campus=campus,
+                           target_room=target_room
+                           )
 ```
 
 
