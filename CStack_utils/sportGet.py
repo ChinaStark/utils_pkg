@@ -11,7 +11,7 @@ import random
 
 from CStack_utils import getCookiesForSport
 
-debug = True
+debug = False
 
 getTimeList = "https://ehall.szu.edu.cn/qljfwapp/sys/lwSzuCgyy/sportVenue/getTimeList.do"
 getRoomList = "https://ehall.szu.edu.cn/qljfwapp/sys/lwSzuCgyy/modules/sportVenue/getOpeningRoom.do"
@@ -132,6 +132,8 @@ def request_url(cfg, url, params_, headers_):
 
 
 def main(cfg, emit=None, cancel_callback=None, cnt=1, campus="1", target_room=None):
+    global flag_times_list
+
     def should_cancel():
         return cancel_callback and cancel_callback()
 
@@ -154,7 +156,7 @@ def main(cfg, emit=None, cancel_callback=None, cnt=1, campus="1", target_room=No
     def load_times_list(path):
         with open(path, 'r', encoding='utf-8') as f:
             data = f.read()
-        return True, json.loads(data)
+        return json.loads(data)
 
     def load_rooms_list(path):
         with open(path, 'r', encoding='utf-8') as f:
@@ -163,9 +165,20 @@ def main(cfg, emit=None, cancel_callback=None, cnt=1, campus="1", target_room=No
 
     # 这一步是每个场馆都是固定的wid，因此我们记录羽毛球的放在json文件里面，直接加载json数据减少一次请求时间
     if cfg.typeOfSport == "001":
-        flag_times_list, times_list = load_times_list("static/time_list.json")
+        times_list = load_times_list("static/time_list.json")
     else:
         flag_times_list, times_list = request_url(cfg, getTimeList, cfg.params_getTimeList, cfg.headers)
+        if flag_times_list:
+            if emit:
+                emit('appointment_update', {'message': 'cookies 校验成功'})
+            elif debug:
+                print('cookies 校验成功')
+        else:
+            if emit:
+                emit('appointment_update', {'message': 'Cookies 失效，重新登录...'})
+            if debug:
+                print('Cookies 失效，重新登录...')
+            return False, 'need cookies'
 
     if debug:
         print('times_list', times_list)
@@ -391,7 +404,8 @@ def strat_appointment(day, start_time, stu_name, stu_id, cookie_file_path, sport
         if should_cancel():
             return cancel_result()
         attempts += 1
-        success, msg_main = main(cfg, emit=emit, cancel_callback=should_cancel, cnt=cnt, campus=campus, target_room=target_room)
+        success, msg_main = main(cfg, emit=emit, cancel_callback=should_cancel, cnt=cnt, campus=campus,
+                                 target_room=target_room)
         if success:
             notify('预约成功，速速付款!')
             return True, 'success'
