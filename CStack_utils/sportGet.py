@@ -132,8 +132,6 @@ def request_url(cfg, url, params_, headers_):
 
 
 def main(cfg, emit=None, cancel_callback=None, cnt=1, campus="1", target_room=None):
-    global flag_times_list
-
     def should_cancel():
         return cancel_callback and cancel_callback()
 
