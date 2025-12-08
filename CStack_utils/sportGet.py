@@ -11,32 +11,30 @@ import random
 
 from CStack_utils import getCookiesForSport
 
-debug = True
-
+debug = False
 
 getTimeList = "https://ehall.szu.edu.cn/qljfwapp/sys/lwSzuCgyy/sportVenue/getTimeList.do"
 getRoomList = "https://ehall.szu.edu.cn/qljfwapp/sys/lwSzuCgyy/modules/sportVenue/getOpeningRoom.do"
-insertUrl="https://ehall.szu.edu.cn/qljfwapp/sys/lwSzuCgyy/sportVenue/insertVenueBookingInfo.do"
+insertUrl = "https://ehall.szu.edu.cn/qljfwapp/sys/lwSzuCgyy/sportVenue/insertVenueBookingInfo.do"
 
 # ----------config-------------- #
 import types
+
+
 def init(**args):
-    """
-    001: 羽毛球
-    003: 排球
-    """
     # 提取参数
     you_name = args['you_name']
     you_id = args['you_id']
-    YYLX = args['YYLX']  # 默认粤海是 "1.0"
-    typeOfSport = args['typeOfSport']  # 预约什么运动 "003"
+    YYLX = args['YYLX']
+    XQDM = args['XQDM']
+    typeOfSport = args['typeOfSport']
     appointment_day = args['appointment_day']
     appointment_time_start = args['appointment_time_start']
     cookie_file = args['cookie_file']
     target_time_str = args['target_time_str']
     # 创建参数字典
     params_getRoomList = {
-        "XQDM": 1,
+        "XQDM": XQDM,
         "YYRQ": appointment_day,
         "YYLX": YYLX,
         "XMDM": typeOfSport,
@@ -86,15 +84,17 @@ def init(**args):
     )
     return namespace
 
+
 def load_cookies(file_path):
     with open(file_path, 'r') as file:
-        cookie_str = file.read()
+        cookie_str = file.read().strip()
     return cookie_str
+
 
 def set_cookies(file_path, cookie_str):
     new_weu_match = re.search(r"_WEU=([^;]+)", cookie_str)
     if not new_weu_match:
-        raise ValueError("cookie_str 中找不到 _WEU 字段")
+        raise ValueError("当前cookie已失效，请重新获取cookie并更新cookies文件")
 
     new_weu = new_weu_match.group(1)
 
@@ -103,31 +103,35 @@ def set_cookies(file_path, cookie_str):
 
     # 替换文件里现有的 _WEU 值
     new_content = re.sub(
-        r"_WEU=[^;]+",      # 匹配 _WEU=到分号之间
+        r"_WEU=[^;]+",  # 匹配 _WEU=到分号之间
         f"_WEU={new_weu}",  # 替换为新的值
         content
     )
 
     with open(file_path, 'w', encoding="utf-8") as f:
         f.write(new_content)
+
+
 def request_url(cfg, url, params_, headers_):
-    try:
-        response = requests.post(url, data=params_, headers=headers_)
-        cookie_header = response.headers.get('Set-Cookie')
+    response = requests.post(url, data=params_, headers=headers_)
+    cookie_header = response.headers.get('Set-Cookie')
+    if cookie_header:
+        set_cookies(cfg.cookie_file, cookie_header)
+    else:
+        raise ValueError("request_url: no Set-Cookie header in response, please update your cookie")
+    if debug:
+        print(params_)
         if cookie_header:
-            set_cookies(cfg.cookie_file, cookie_header)
-        elif debug:
-            print('request_url: no Set-Cookie header in response')
-        if debug:
-            print(params_)
-            if cookie_header:
-                print(cookie_header)
+            print(cookie_header)
+    try:
         response_json = response.json()
         ret = response_json
     except Exception as e:
-        return False, 'Bug in request_url:' + str(e)
+        return False, 'Appointment not yet open, please wait...'
     return True, ret
-def main(cfg, emit=None, cancel_callback=None, cnt = 1):
+
+
+def main(cfg, emit=None, cancel_callback=None, cnt=1, campus="1", target_room=None):
     def should_cancel():
         return cancel_callback and cancel_callback()
 
@@ -150,24 +154,29 @@ def main(cfg, emit=None, cancel_callback=None, cnt = 1):
     def load_times_list(path):
         with open(path, 'r', encoding='utf-8') as f:
             data = f.read()
-        return True, json.loads(data)
+        return json.loads(data)
+
+    def load_rooms_list(path):
+        with open(path, 'r', encoding='utf-8') as f:
+            data = f.read()
+        return json.loads(data)
 
     # 这一步是每个场馆都是固定的wid，因此我们记录羽毛球的放在json文件里面，直接加载json数据减少一次请求时间
     if cfg.typeOfSport == "001":
-        flag_times_list, times_list = load_times_list("static/time_list.json")
+        times_list = load_times_list("static/time_list.json")
     else:
         flag_times_list, times_list = request_url(cfg, getTimeList, cfg.params_getTimeList, cfg.headers)
-    if flag_times_list:
-        if emit:
-            emit('appointment_update', {'message': 'cookies 校验成功'})
-        elif debug:
-            print('cookies 校验成功')
-    else:
-        if emit:
-            emit('appointment_update', {'message': 'Cookies 失效，重新登录...'})
-        if debug:
-            print('Cookies 失效，重新登录...')
-        return False, 'need cookies'
+        if flag_times_list:
+            if emit:
+                emit('appointment_update', {'message': 'cookies 校验成功'})
+            elif debug:
+                print('cookies 校验成功')
+        else:
+            if emit:
+                emit('appointment_update', {'message': 'Cookies 失效，重新登录...'})
+            if debug:
+                print('Cookies 失效，重新登录...')
+            return False, 'need cookies'
 
     if debug:
         print('times_list', times_list)
@@ -192,7 +201,11 @@ def main(cfg, emit=None, cancel_callback=None, cnt = 1):
     if should_cancel():
         return False, '用户取消'
 
-    global_CDWID = -1
+    rooms_list = load_rooms_list("static/room_list.json")
+    if target_room is None or target_room == "":
+        global_CDWID = -1
+    else:
+        global_CDWID = rooms_list[campus][target_room]
 
     def move_dict_to_front(list, target):
         """将特定字典移动到列表首位"""
@@ -280,7 +293,8 @@ def main(cfg, emit=None, cancel_callback=None, cnt = 1):
                                 'message': f"日期:{param_item['YYKS']}\n场馆:{param_item['CGDM']}预约成功!!!\n 开始下一场预约..."
                             })
                         if debug:
-                            print(f"日期:{param_item['YYKS']}\n场馆:{param_item['CGDM']}预约成功!!!\n 开始下一场预约...")
+                            print(
+                                f"日期:{param_item['YYKS']}\n场馆:{param_item['CGDM']}预约成功!!!\n 开始下一场预约...")
                         break
                     else:
                         global_CDWID = -1
@@ -289,15 +303,18 @@ def main(cfg, emit=None, cancel_callback=None, cnt = 1):
                                 'message': f"日期:{param_item['YYKS']}\n场馆:{param_item['CGDM']}预约失败!!!\n 开始下一场预约..."
                             })
                         if debug:
-                            print(f"日期:{param_item['YYKS']}\n场馆:{param_item['CGDM']}预约失败!!!\n 开始下一场预约...")
+                            print(
+                                f"日期:{param_item['YYKS']}\n场馆:{param_item['CGDM']}预约失败!!!\n 开始下一场预约...")
         return False, '可能是你选择的时间段没了'
     else:
         if debug:
             print('网慢了，已经无！要不就是还没开！')
         return False, '网慢了，已经无！要不就是还没开！'
+
+
 def strat_appointment(day, start_time, stu_name, stu_id, cookie_file_path, sport_type="001", yylx=1.0,
                       target_time_str="12:30", emit=None, password=None, wait_until_target=False,
-                      max_attempts=120, retry_delay=1, cancel_callback=None, cnt = 1):
+                      max_attempts=30, retry_delay=0.5, cancel_callback=None, cnt=1, campus="1", target_room=None):
     def notify(msg: str):
         if emit:
             emit('appointment_update', {'message': msg})
@@ -316,6 +333,7 @@ def strat_appointment(day, start_time, stu_name, stu_id, cookie_file_path, sport
         cookie_file=cookie_file_path,
         you_id=stu_id,
         YYLX=yylx,
+        XQDM=int(campus),
         typeOfSport=sport_type,
         appointment_day=day,
         appointment_time_start=start_time,
@@ -346,11 +364,16 @@ def strat_appointment(day, start_time, stu_name, stu_id, cookie_file_path, sport
         except ValueError:
             notify(f'目标时间格式错误: {cfg.target_time_str}')
             return False, 'invalid target time'
+
     def countdown(remaining):
         hours, remainder = divmod(remaining.seconds, 3600)
         minutes, seconds = divmod(remainder, 60)
         countdown_msg = f'距离预约开放时间还剩: {hours:02d}:{minutes:02d}:{seconds:02d}'
         notify(countdown_msg)
+
+    # 检查当前cookie是否有效
+    cfg.headers['Cookie'] = load_cookies(cfg.cookie_file)
+    _, _ = request_url(cfg, getTimeList, cfg.params_getTimeList, cfg.headers)
 
     if wait_until_target and target_time:
         while True:
@@ -362,11 +385,11 @@ def strat_appointment(day, start_time, stu_name, stu_id, cookie_file_path, sport
             # 计算剩余时间并显示倒计时
             remaining = target_time - now
             if remaining >= timedelta(minutes=20):
+                countdown(remaining)
+                time.sleep(1000)
                 # 刷新cookies
                 cfg.headers['Cookie'] = load_cookies(cfg.cookie_file)
                 _, _ = request_url(cfg, getTimeList, cfg.params_getTimeList, cfg.headers)
-                countdown(remaining)
-                time.sleep(1000)
             elif timedelta(minutes=20) >= remaining >= timedelta(minutes=0.5):
                 countdown(remaining)
                 time.sleep(26)
@@ -379,7 +402,8 @@ def strat_appointment(day, start_time, stu_name, stu_id, cookie_file_path, sport
         if should_cancel():
             return cancel_result()
         attempts += 1
-        success, msg_main = main(cfg, emit=emit, cancel_callback=should_cancel, cnt = cnt)
+        success, msg_main = main(cfg, emit=emit, cancel_callback=should_cancel, cnt=cnt, campus=campus,
+                                 target_room=target_room)
         if success:
             notify('预约成功，速速付款!')
             return True, 'success'
